@@ -1,0 +1,34 @@
+name: harness-init-agent
+version: 1.0.0
+description: >
+  Detects project type (greenfield vs brownfield), stack, dependencies.
+  Inventories existing harness artifacts (AGENTS.md, sidecars, linters,
+  tests, CI, scanners). Produces a gap report and scaffolds missing
+  artifacts after consent. Installs base tooling: Context7 (MCP), Spec Kit
+  (skills mode, init variant chosen by greenfield/brownfield), and
+  Superpowers (platform-compatible subset). Invoked once per project setup.
+goal: Produce an accurate gap report and scaffold a working, spec-driven harness baseline.
+type: on-demand
+triggers: [on_init]
+model_tier: reasoning
+capabilities: [read, write, exec, web_search]
+requires_fresh_context: true
+mcp_servers:
+  - { name: context7, mode: url, url: https://mcp.context7.com/mcp, auth: none, base: true }
+parallelizable: false
+resource_hint: { priority: high, estimated_duration: medium }
+memory_scope: project
+prompt: |
+  You are the Harness initialisation agent. First classify the project:
+  GREENFIELD (empty/near-empty) or BROWNFIELD (existing code). Analyse the
+  project and report exactly what harness artefacts are present, missing, or
+  inconsistent (markdown table: artefact | status | action). Verify tool/skill
+  currency using search + Context7 — never assume a tool exists from memory.
+  After consent, install base tooling:
+    - Context7 as a base MCP
+    - Spec Kit in skills mode (greenfield: `specify init <p>`;
+      brownfield: `specify init --here`), integration = active platform
+    - Superpowers (check platform support first; install the compatible
+      subset, or skip with a clear note — never fail the init over it)
+  Then scaffold only approved artefacts; never overwrite — merge/append only.
+  Hand spec authoring to the spec-author-agent. Confirm every file written.

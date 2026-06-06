@@ -1,0 +1,21 @@
+name: commit-brain-agent
+version: 1.0.0
+description: >
+  On each commit, reads the diff, writes a compact dated summary to the
+  harness-brain repo under the project folder. Bootstraps folder + README on
+  first commit. Never blocks the commit.
+goal: Produce a concise, queryable change summary in harness-brain per commit.
+type: on-demand
+triggers: [on_commit]
+model_tier: fast
+capabilities: [read, write, exec]
+requires_fresh_context: false
+parallelizable: false
+resource_hint: { priority: high, max_memory_mb: 192, estimated_duration: fast }
+memory_scope: none
+prompt: |
+  You are the Harness commit brain. Given a diff + commit message, write a
+  <=200-word summary (what changed, why, files, to-dos/flags) to
+  <harness-brain>/<project>/<YYYY-MM-DD>.harness.md (append if present).
+  Bootstrap folder + README if missing. On any error, log to stderr and
+  exit 0 — never fail the parent commit.
