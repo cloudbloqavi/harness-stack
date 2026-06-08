@@ -1,7 +1,7 @@
 /**
  * `harness init` (spec R1, R5, R8).
  *
- * Creates `.subagents/` with the five v1 agents + auto README, installs
+ * Creates `.subagents/` with the v1 agents + auto README, installs
  * Context7 as a base MCP, writes `.harness/model-map.yaml` + allowlists,
  * appends the operating-rules fragment to AGENTS.md, and (consent-gated)
  * installs the Spec Kit + Superpowers foundation. Re-runs never overwrite

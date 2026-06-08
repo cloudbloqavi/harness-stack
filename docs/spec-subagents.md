@@ -177,6 +177,7 @@ provenance labelled and currency confirmed via search/Context7.
 | `skills-router-agent` | fast | on_demand | Rank skills across sources, consent-gated |
 | `mcp-router-agent` | fast | on_demand | Rank MCP servers from the curated allowlist |
 | `commit-brain-agent` | fast | on_commit | Write per-commit summaries into `harness-brain` |
+| `dependency-audit-agent` | reasoning | on_init, on_demand | Maintain `DEPENDENCIES.md`: latest/outdated/deprecated/EOL per package, from live data |
 
 ### Phase 2 (P1, should-have)
 
@@ -192,7 +193,7 @@ provenance labelled and currency confirmed via search/Context7.
 
 | Req | What | Where |
 | --- | --- | --- |
-| R1 | `.subagents/` init + 5 v1 agents + README; non-destructive re-runs | `src/commands/init.ts` |
+| R1 | `.subagents/` init + v1 agents + README; non-destructive re-runs | `src/commands/init.ts` |
 | R2 | Discovery & reuse (exact → similar ≥0.75 → create), consent-gated | `src/discovery/`, `src/commands/agent.ts` |
 | R3 | Platform-agnostic model resolution + override + fallback | `src/resolution/model-resolver.ts` |
 | R4 | Capability → native tool resolution | `src/resolution/capability-resolver.ts` |
