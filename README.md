@@ -49,9 +49,12 @@ harness hooks                      # trigger -> native event-hook wiring plan
 harness check --all                # see the resource-aware orchestration plan
 ```
 
-`harness init` asks which agentic platform you use — Claude Code, Antigravity,
-Codex, Cursor, or Copilot. Pass `--platform <id>` (or set `HARNESS_PLATFORM`) to
-skip the prompt; `build-agents` / `hooks` default to `claude-code`.
+`harness init` asks which agentic platform(s) you use — Claude Code,
+Antigravity, Codex, Cursor, Copilot. **A repo can target several at once**
+(e.g. Claude Code + Cursor); pick multiple at the prompt or pass a comma list:
+`--platform claude-code,cursor` (or set `HARNESS_PLATFORM`). The selection is
+saved to `.harness/config.yaml`, and `build-agents` / `hooks` then default to
+**every configured platform** (add `--platform <id>` to target just one).
 
 ## Architecture
 
@@ -69,8 +72,9 @@ skip the prompt; `build-agents` / `hooks` default to `claude-code`.
    |  (source of truth)  |   |   model-map.yaml      |   |  (operating rules:  |
    |  name, tier,        |   |   trigger-map.yaml    |   |   fresh-context for  |
    |  capabilities,      |   |   allowlists/*.yaml   |   |   the main agent)   |
-   |  triggers, prompt   |   |   consent.json        |   +---------------------+
-   +----------+----------+   +-----------+-----------+
+   |  triggers, prompt   |   |   config.yaml         |   +---------------------+
+   +----------+----------+   |   (enabled platforms) |
+              |              +-----------+-----------+
               |                          |
               |   harness build-agents   |
               v                          v

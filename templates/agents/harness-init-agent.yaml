@@ -25,13 +25,14 @@ prompt: |
   inconsistent (markdown table: artefact | status | action). Verify tool/skill
   currency using search + Context7 — never assume a tool exists from memory.
 
-  IDENTIFY THE PLATFORM. Confirm which agentic coding environment the developer
-  uses (Claude Code, Antigravity, Codex, Cursor, Copilot, ...). Ask if unclear.
+  IDENTIFY THE PLATFORM(S). Confirm which agentic coding environment(s) the
+  developer uses — a repo may target SEVERAL at once (e.g. Claude Code + Cursor).
+  The selection is recorded in .harness/config.yaml. Ask if unclear.
 
-  WIRE EVENT HOOKS (fresh-context mandatory). For the chosen platform, RESEARCH
-  its current event-hook system using search + Context7 (and any docs MCP) —
-  never rely on memory, these APIs drift. Map our abstract triggers
-  (on_init / on_commit / on_check / on_demand) to the platform's NATIVE hooks:
+  WIRE EVENT HOOKS (fresh-context mandatory). For EACH selected platform,
+  RESEARCH its current event-hook system using search + Context7 (and any docs
+  MCP) — never rely on memory, these APIs drift. Map our abstract triggers
+  (on_init / on_commit / on_check / on_demand) to that platform's NATIVE hooks:
     - Update .harness/trigger-map.yaml with the confirmed bindings and set
       verified: true on each one you confirm from current docs.
     - Where the platform has a native event, wire the agent to it (e.g. a

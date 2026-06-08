@@ -80,8 +80,10 @@ Because hook APIs drift, the map ships with best-known defaults flagged
 platform's current hook docs** (search + Context7), refreshes the map with
 `verified: true`, and wires agents to native hooks — falling back to a
 Harness-managed trigger only where the platform has no equivalent. `harness
-hooks` prints the resolved plan. `init` asks which platform you use first, so
-the research targets the right environment.
+hooks` prints the resolved plan. `init` asks which platform(s) you use first —
+a repo may enable several at once (e.g. Claude Code + Cursor), recorded in
+`.harness/config.yaml` — and `build-agents` / `hooks` default to every enabled
+platform so the research and wiring target each environment.
 
 ## Fresh-context mandate
 

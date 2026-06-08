@@ -11,8 +11,14 @@ export interface ProjectPaths {
   harnessDir: string;
   modelMap: string;
   triggerMap: string;
+  config: string;
   allowlistsDir: string;
   readme: string;
+}
+
+export interface HarnessConfig {
+  /** Agentic platforms enabled for this project (one or more). */
+  platforms: string[];
 }
 
 export function projectPaths(root: string): ProjectPaths {
@@ -22,6 +28,7 @@ export function projectPaths(root: string): ProjectPaths {
     harnessDir: path.join(root, ".harness"),
     modelMap: path.join(root, ".harness", "model-map.yaml"),
     triggerMap: path.join(root, ".harness", "trigger-map.yaml"),
+    config: path.join(root, ".harness", "config.yaml"),
     allowlistsDir: path.join(root, ".harness", "allowlists"),
     readme: path.join(root, ".subagents", "README.md"),
   };
@@ -57,6 +64,24 @@ export async function loadTriggerMap(root: string): Promise<TriggerMap> {
     );
   }
   return readYaml<TriggerMap>(triggerMap);
+}
+
+/**
+ * The platforms enabled for this project. A repo may target several agentic
+ * environments at once (e.g. Claude Code + Cursor). Falls back to a single
+ * default when no config is present.
+ */
+export async function loadPlatforms(
+  root: string,
+  fallback = "claude-code",
+): Promise<string[]> {
+  const { config } = projectPaths(root);
+  if (!(await pathExists(config))) return [fallback];
+  const cfg = await readYaml<Partial<HarnessConfig>>(config);
+  const platforms = Array.isArray(cfg?.platforms)
+    ? cfg.platforms.filter((p): p is string => typeof p === "string")
+    : [];
+  return platforms.length > 0 ? platforms : [fallback];
 }
 
 /** Names of base MCP servers (e.g. context7) declared across all agents. */

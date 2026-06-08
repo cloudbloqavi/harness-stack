@@ -27,12 +27,13 @@ import { confirm, isApproved } from "../util/consent.js";
 import { log } from "../util/log.js";
 import { installSpecKit } from "../foundation/spec-kit.js";
 import { installSuperpowers } from "../foundation/superpowers.js";
-import { selectPlatform } from "./select-platform.js";
+import { selectPlatforms } from "./select-platform.js";
+import { dumpYaml } from "../util/fsx.js";
 
 export interface InitOptions {
   root: string;
-  /** Explicit platform; when omitted, init asks (TTY) or defaults. */
-  platform?: string;
+  /** Explicit platform(s); when omitted, init asks (TTY) or defaults. */
+  platforms?: string[];
   assumeYes?: boolean;
   /** Skip the Spec Kit / Superpowers subprocess installs. */
   skipFoundation?: boolean;
@@ -71,14 +72,19 @@ async function copyTemplateAgents(
 export async function runInit(opts: InitOptions): Promise<void> {
   const paths = projectPaths(opts.root);
 
-  // 0. Identify the agentic platform (ask unless preselected/non-interactive).
-  const platform = await selectPlatform({
-    preselected: opts.platform,
+  // 0. Identify the agentic platform(s) (ask unless preselected/non-interactive).
+  const platforms = await selectPlatforms({
+    preselected: opts.platforms,
     fallback: opts.assumeYes ? "claude-code" : undefined,
   });
+  // The first selected platform is "primary" — used for single-target steps
+  // like the Spec Kit `--integration` flag.
+  const primary = platforms[0]!;
 
   const projectType = await detectProjectType(opts.root);
-  log.step(`Harness init — ${projectType} project, platform=${platform}`);
+  log.step(
+    `Harness init — ${projectType} project, platform(s)=${platforms.join(", ")}`,
+  );
 
   const tplDir = await templatesDir();
 
@@ -112,6 +118,16 @@ export async function runInit(opts: InitOptions): Promise<void> {
     log.ok("wrote .harness/trigger-map.yaml");
   else log.detail("kept existing .harness/trigger-map.yaml");
 
+  // Project config records the enabled platform(s). Always written so re-runs
+  // with a new selection update the set build-agents/hooks target.
+  await fs.writeFile(
+    paths.config,
+    "# Harness project configuration\n" +
+      dumpYaml({ platforms }),
+    "utf8",
+  );
+  log.ok(`wrote .harness/config.yaml (platforms: ${platforms.join(", ")})`);
+
   await ensureDir(paths.allowlistsDir);
   for (const name of ["skills.yaml", "mcp-servers.yaml"]) {
     const dest = path.join(paths.allowlistsDir, name);
@@ -134,20 +150,28 @@ export async function runInit(opts: InitOptions): Promise<void> {
   log.step("3. AGENTS.md operating rules");
   await appendAgentsFragment(opts.root, tplDir);
 
-  // 5. Event-hook wiring plan for the chosen platform.
+  // 5. Event-hook wiring plan for each chosen platform.
   log.step("4. Event-hook wiring");
-  await showHookPlan(opts.root, platform);
+  for (const platform of platforms) await showHookPlan(opts.root, platform);
 
-  // 6. Foundation install (consent-gated subprocesses).
+  // 6. Foundation install (consent-gated subprocesses). Spec Kit's
+  //    --integration is single-target, so it runs for the primary platform;
+  //    build-agents covers every selected platform.
   log.step("5. Spec-driven foundation");
   if (opts.skipFoundation) {
     log.detail("skipped (--skip-foundation)");
   } else {
-    await installFoundation(opts.root, platform, projectType, opts);
+    if (platforms.length > 1) {
+      log.detail(`Spec Kit integration targets the primary platform (${primary}).`);
+    }
+    await installFoundation(opts.root, primary, projectType, opts);
   }
 
   log.step("Done.");
-  log.info("Next: `harness build-agents` to generate platform agent files.");
+  log.info(
+    `Next: \`harness build-agents\` generates files for all ${platforms.length} ` +
+      `platform(s); add \`--platform <id>\` to target one.`,
+  );
   log.info("Then: `harness hooks` to review trigger -> native-hook wiring.");
 }
 
@@ -157,16 +181,17 @@ async function showHookPlan(root: string, platform: string): Promise<void> {
   const triggers = new Set<string>();
   for (const a of agents) a.triggers.forEach((t) => triggers.add(t));
 
+  log.info(`${platform}:`);
   let unverified = 0;
   for (const t of [...triggers].sort()) {
     const r = resolveTrigger(platform, t as Trigger, map);
     const mark = r.fellBack ? "↺ fallback" : "✓ native";
-    log.detail(`${t}  ->  ${describeBinding(r.binding)}  [${mark}]`);
+    log.detail(`  ${t}  ->  ${describeBinding(r.binding)}  [${mark}]`);
     if (r.binding.verified === false) unverified++;
   }
   if (unverified > 0) {
     log.warn(
-      `${unverified} hook binding(s) are unverified defaults for ${platform}. ` +
+      `  ${unverified} hook binding(s) are unverified defaults for ${platform}. ` +
         `The harness-init-agent will confirm them against current docs via ` +
         `search + Context7, then refresh .harness/trigger-map.yaml.`,
     );
