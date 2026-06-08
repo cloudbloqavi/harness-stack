@@ -48,7 +48,13 @@ describe("buildRoster across platforms (R3, R5, R7 acceptance)", () => {
     const modelMap = await loadModelMap();
     const baseMcpNames = collectBaseMcpNames(agents);
 
-    for (const platform of ["claude-code", "antigravity", "codex"]) {
+    for (const platform of [
+      "claude-code",
+      "antigravity",
+      "codex",
+      "cursor",
+      "copilot",
+    ]) {
       const report = buildRoster(agents, { platform, modelMap, baseMcpNames });
       expect(report.errors, `errors on ${platform}: ${report.errors.join("; ")}`).toEqual([]);
       expect(report.results.length).toBe(7);

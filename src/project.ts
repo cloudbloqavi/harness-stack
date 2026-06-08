@@ -2,6 +2,7 @@
 import path from "node:path";
 import { parseSubagent, type Subagent } from "./schema.js";
 import type { ModelMap } from "./resolution/model-resolver.js";
+import type { TriggerMap } from "./resolution/trigger-resolver.js";
 import { listFiles, pathExists, readYaml } from "./util/fsx.js";
 
 export interface ProjectPaths {
@@ -9,6 +10,7 @@ export interface ProjectPaths {
   subagentsDir: string;
   harnessDir: string;
   modelMap: string;
+  triggerMap: string;
   allowlistsDir: string;
   readme: string;
 }
@@ -19,6 +21,7 @@ export function projectPaths(root: string): ProjectPaths {
     subagentsDir: path.join(root, ".subagents"),
     harnessDir: path.join(root, ".harness"),
     modelMap: path.join(root, ".harness", "model-map.yaml"),
+    triggerMap: path.join(root, ".harness", "trigger-map.yaml"),
     allowlistsDir: path.join(root, ".harness", "allowlists"),
     readme: path.join(root, ".subagents", "README.md"),
   };
@@ -44,6 +47,16 @@ export async function loadModelMap(root: string): Promise<ModelMap> {
     );
   }
   return readYaml<ModelMap>(modelMap);
+}
+
+export async function loadTriggerMap(root: string): Promise<TriggerMap> {
+  const { triggerMap } = projectPaths(root);
+  if (!(await pathExists(triggerMap))) {
+    throw new Error(
+      `Missing .harness/trigger-map.yaml. Run \`harness init\` first.`,
+    );
+  }
+  return readYaml<TriggerMap>(triggerMap);
 }
 
 /** Names of base MCP servers (e.g. context7) declared across all agents. */

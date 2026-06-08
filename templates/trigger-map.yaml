@@ -1,0 +1,46 @@
+# Resolve abstract trigger -> native platform event hook.
+#
+# Like model-map.yaml, this is the single editable source for hook wiring.
+# Agents declare abstract triggers (on_init / on_commit / on_check / on_demand);
+# the active platform's hooks are mapped here.
+#
+# kind:
+#   native   -> the platform fires this event itself (wire the agent to it)
+#   git-hook -> Harness installs a git hook (the platform has no such event)
+#   harness  -> Harness-managed fallback (e.g. `harness check`)
+#
+# verified: false  -> shipped as a best-known default; the harness-init-agent
+#   MUST confirm/refresh it by researching the platform's CURRENT hook docs
+#   (fresh-context mandate) at init. Platform hook APIs drift — never trust a
+#   stale mapping.
+
+claude-code:
+  on_init:   { kind: native,   hook: SessionStart, verified: true }
+  on_commit: { kind: git-hook, hook: post-commit,  verified: true,
+               note: "Claude Code has no commit event; Harness installs a git hook" }
+  on_check:  { kind: harness,  mechanism: "harness check (manual or CI)", verified: true }
+  on_demand: { kind: native,   hook: "subagent dispatch (by description)", verified: true }
+
+antigravity:
+  on_init:   { kind: native,   hook: "workflow start", verified: false }
+  on_commit: { kind: git-hook, hook: post-commit,      verified: true }
+  on_check:  { kind: harness,  mechanism: "harness check", verified: true }
+  on_demand: { kind: native,   hook: "agent invocation", verified: false }
+
+codex:
+  on_init:   { kind: native,   hook: "session start", verified: false }
+  on_commit: { kind: git-hook, hook: post-commit,     verified: true }
+  on_check:  { kind: harness,  mechanism: "harness check", verified: true }
+  on_demand: { kind: native,   hook: "agent invocation", verified: false }
+
+cursor:
+  on_init:   { kind: native,   hook: "rules/agent on session", verified: false }
+  on_commit: { kind: git-hook, hook: post-commit, verified: true }
+  on_check:  { kind: harness,  mechanism: "harness check", verified: true }
+  on_demand: { kind: native,   hook: "agent invocation", verified: false }
+
+copilot:
+  on_init:   { kind: harness,  mechanism: "first-run bootstrap (no native init event)", verified: false }
+  on_commit: { kind: git-hook, hook: post-commit, verified: true }
+  on_check:  { kind: harness,  mechanism: "harness check", verified: true }
+  on_demand: { kind: native,   hook: "chat/agent invocation", verified: false }

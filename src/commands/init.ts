@@ -9,7 +9,12 @@
  */
 import path from "node:path";
 import { promises as fs } from "node:fs";
-import { projectPaths, loadSubagents } from "../project.js";
+import { projectPaths, loadSubagents, loadTriggerMap } from "../project.js";
+import type { Trigger } from "../schema.js";
+import {
+  resolveTrigger,
+  describeBinding,
+} from "../resolution/trigger-resolver.js";
 import { templatesDir } from "../templates.js";
 import {
   ensureDir,
@@ -22,11 +27,12 @@ import { confirm, isApproved } from "../util/consent.js";
 import { log } from "../util/log.js";
 import { installSpecKit } from "../foundation/spec-kit.js";
 import { installSuperpowers } from "../foundation/superpowers.js";
-import { listPlatforms } from "../adapters/registry.js";
+import { selectPlatform } from "./select-platform.js";
 
 export interface InitOptions {
   root: string;
-  platform: string;
+  /** Explicit platform; when omitted, init asks (TTY) or defaults. */
+  platform?: string;
   assumeYes?: boolean;
   /** Skip the Spec Kit / Superpowers subprocess installs. */
   skipFoundation?: boolean;
@@ -64,14 +70,15 @@ async function copyTemplateAgents(
 
 export async function runInit(opts: InitOptions): Promise<void> {
   const paths = projectPaths(opts.root);
-  if (!listPlatforms().includes(opts.platform)) {
-    throw new Error(
-      `Unknown platform "${opts.platform}". Known: ${listPlatforms().join(", ")}.`,
-    );
-  }
+
+  // 0. Identify the agentic platform (ask unless preselected/non-interactive).
+  const platform = await selectPlatform({
+    preselected: opts.platform,
+    fallback: opts.assumeYes ? "claude-code" : undefined,
+  });
 
   const projectType = await detectProjectType(opts.root);
-  log.step(`Harness init — ${projectType} project, platform=${opts.platform}`);
+  log.step(`Harness init — ${projectType} project, platform=${platform}`);
 
   const tplDir = await templatesDir();
 
@@ -96,6 +103,15 @@ export async function runInit(opts: InitOptions): Promise<void> {
     log.ok("wrote .harness/model-map.yaml");
   else log.detail("kept existing .harness/model-map.yaml");
 
+  if (
+    await writeIfAbsent(
+      paths.triggerMap,
+      await fs.readFile(path.join(tplDir, "trigger-map.yaml"), "utf8"),
+    )
+  )
+    log.ok("wrote .harness/trigger-map.yaml");
+  else log.detail("kept existing .harness/trigger-map.yaml");
+
   await ensureDir(paths.allowlistsDir);
   for (const name of ["skills.yaml", "mcp-servers.yaml"]) {
     const dest = path.join(paths.allowlistsDir, name);
@@ -118,16 +134,43 @@ export async function runInit(opts: InitOptions): Promise<void> {
   log.step("3. AGENTS.md operating rules");
   await appendAgentsFragment(opts.root, tplDir);
 
-  // 5. Foundation install (consent-gated subprocesses).
-  log.step("4. Spec-driven foundation");
+  // 5. Event-hook wiring plan for the chosen platform.
+  log.step("4. Event-hook wiring");
+  await showHookPlan(opts.root, platform);
+
+  // 6. Foundation install (consent-gated subprocesses).
+  log.step("5. Spec-driven foundation");
   if (opts.skipFoundation) {
     log.detail("skipped (--skip-foundation)");
   } else {
-    await installFoundation(opts, projectType);
+    await installFoundation(opts.root, platform, projectType, opts);
   }
 
   log.step("Done.");
   log.info("Next: `harness build-agents` to generate platform agent files.");
+  log.info("Then: `harness hooks` to review trigger -> native-hook wiring.");
+}
+
+async function showHookPlan(root: string, platform: string): Promise<void> {
+  const map = await loadTriggerMap(root);
+  const agents = await loadSubagents(root);
+  const triggers = new Set<string>();
+  for (const a of agents) a.triggers.forEach((t) => triggers.add(t));
+
+  let unverified = 0;
+  for (const t of [...triggers].sort()) {
+    const r = resolveTrigger(platform, t as Trigger, map);
+    const mark = r.fellBack ? "↺ fallback" : "✓ native";
+    log.detail(`${t}  ->  ${describeBinding(r.binding)}  [${mark}]`);
+    if (r.binding.verified === false) unverified++;
+  }
+  if (unverified > 0) {
+    log.warn(
+      `${unverified} hook binding(s) are unverified defaults for ${platform}. ` +
+        `The harness-init-agent will confirm them against current docs via ` +
+        `search + Context7, then refresh .harness/trigger-map.yaml.`,
+    );
+  }
 }
 
 async function appendAgentsFragment(
@@ -154,21 +197,23 @@ async function appendAgentsFragment(
 }
 
 async function installFoundation(
-  opts: InitOptions,
+  root: string,
+  platform: string,
   projectType: "greenfield" | "brownfield",
+  opts: InitOptions,
 ): Promise<void> {
   const consent = await confirm(
     "Install the spec-driven foundation (Spec Kit + Superpowers)?",
-    { assumeYes: opts.assumeYes, projectRoot: opts.root, key: "foundation" },
+    { assumeYes: opts.assumeYes, projectRoot: root, key: "foundation" },
   );
   if (!isApproved(consent)) {
     log.detail("foundation install declined — parked");
     return;
   }
 
-  const projectName = path.basename(path.resolve(opts.root));
-  const specKit = await installSpecKit(projectType, opts.platform, {
-    cwd: opts.root,
+  const projectName = path.basename(path.resolve(root));
+  const specKit = await installSpecKit(projectType, platform, {
+    cwd: root,
     projectName,
     dryRun: opts.dryRunFoundation,
   });
@@ -176,8 +221,8 @@ async function installFoundation(
     ? log.ok(`Spec Kit: ${specKit.message}`)
     : log.warn(`Spec Kit: ${specKit.message}`);
 
-  const sp = await installSuperpowers(opts.platform, {
-    cwd: opts.root,
+  const sp = await installSuperpowers(platform, {
+    cwd: root,
     dryRun: opts.dryRunFoundation,
   });
   log.ok(`Superpowers (${sp.level}): ${sp.message}`);

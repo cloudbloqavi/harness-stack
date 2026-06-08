@@ -58,8 +58,30 @@ Resolution rules ([`src/resolution/model-resolver.ts`](../src/resolution/model-r
 4. A missing tier falls back to the next tier **down** with a warning.
 
 **Acceptance:** the *same* `.subagents/*.yaml` set produces a valid roster on
-Claude Code, Antigravity, and Codex with zero edits — verified in
-[`tests/roster.test.ts`](../tests/roster.test.ts).
+Claude Code, Antigravity, Codex, Cursor, and Copilot with zero edits — verified
+in [`tests/roster.test.ts`](../tests/roster.test.ts).
+
+## Trigger → native event-hook resolution
+
+Agents declare abstract triggers (`on_init` / `on_commit` / `on_check` /
+`on_demand`). Each platform exposes different event hooks, so
+[`.harness/trigger-map.yaml`](../templates/trigger-map.yaml) resolves each
+trigger to a binding via
+[`src/resolution/trigger-resolver.ts`](../src/resolution/trigger-resolver.ts):
+
+- **native** — the platform fires the event itself (e.g. Claude Code
+  `SessionStart` for `on_init`); wire the agent to it.
+- **git-hook** — the platform has no such event (e.g. no commit event), so
+  Harness installs a git hook (`post-commit` for `on_commit`).
+- **harness** — Harness-managed fallback (e.g. `harness check` for `on_check`).
+
+Because hook APIs drift, the map ships with best-known defaults flagged
+`verified: false`. At init the `harness-init-agent` **researches the active
+platform's current hook docs** (search + Context7), refreshes the map with
+`verified: true`, and wires agents to native hooks — falling back to a
+Harness-managed trigger only where the platform has no equivalent. `harness
+hooks` prints the resolved plan. `init` asks which platform you use first, so
+the research targets the right environment.
 
 ## Fresh-context mandate
 
@@ -201,6 +223,7 @@ provenance labelled and currency confirmed via search/Context7.
 | R2 | Discovery & reuse (exact → similar ≥0.75 → create), consent-gated | `src/discovery/`, `src/commands/agent.ts` |
 | R3 | Platform-agnostic model resolution + override + fallback | `src/resolution/model-resolver.ts` |
 | R4 | Capability → native tool resolution | `src/resolution/capability-resolver.ts` |
+| R4b | Trigger → native event-hook resolution (+ git-hook / Harness fallback) | `src/resolution/trigger-resolver.ts` |
 | R5 | Fresh-context enforcement (build fails without search + Context7) | `src/resolution/fresh-context.ts` |
 | R6 | Resource-aware spawning | `src/orchestrator/scheduler.ts` |
 | R7 | Adapter generation | `src/adapters/`, `src/commands/build-agents.ts` |

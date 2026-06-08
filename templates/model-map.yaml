@@ -23,3 +23,18 @@ codex:
   reasoning: gpt-5.5
   deep:      gpt-5.5               # with high reasoning effort
   inherit:   inherit
+
+# Cursor and Copilot let the host pick the model, so every tier resolves to
+# "inherit" (the adapter omits an explicit model and uses whatever the host
+# exposes). Override per-tier here if your setup pins specific models.
+cursor:
+  fast:      inherit
+  reasoning: inherit
+  deep:      inherit
+  inherit:   inherit
+
+copilot:
+  fast:      inherit
+  reasoning: inherit
+  deep:      inherit
+  inherit:   inherit

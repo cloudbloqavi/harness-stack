@@ -13,6 +13,7 @@ export * from "./templates.js";
 export * from "./resolution/model-resolver.js";
 export * from "./resolution/capability-resolver.js";
 export * from "./resolution/fresh-context.js";
+export * from "./resolution/trigger-resolver.js";
 
 export * from "./discovery/similarity.js";
 export * from "./discovery/discover.js";

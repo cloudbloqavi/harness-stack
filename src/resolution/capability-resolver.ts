@@ -34,6 +34,22 @@ export const CAPABILITY_MAPS: Record<string, CapabilityMap> = {
     web_search: ["web_search"],
     web_fetch: ["web_fetch"],
   },
+  // Cursor / Copilot tool names are approximate defaults; the init agent
+  // confirms them against current platform docs (fresh-context mandate).
+  cursor: {
+    read: ["read_file", "codebase_search"],
+    write: ["edit_file"],
+    exec: ["run_terminal_cmd"],
+    web_search: ["web_search"],
+    web_fetch: ["fetch"],
+  },
+  copilot: {
+    read: ["read"],
+    write: ["editFiles"],
+    exec: ["runInTerminal"],
+    web_search: ["websearch"],
+    web_fetch: ["fetch"],
+  },
 };
 
 export interface ResolvedCapabilities {

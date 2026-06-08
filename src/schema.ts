@@ -26,6 +26,7 @@ export const TRIGGERS = [
   "on_demand",
   "on_init",
 ] as const;
+export type Trigger = (typeof TRIGGERS)[number];
 
 const semver = z
   .string()

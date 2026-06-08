@@ -42,14 +42,16 @@ npm run harness -- <command>     # e.g. npm run harness -- init
 ## Quick start
 
 ```bash
-harness init                       # scaffold .subagents/ + .harness/ + foundation
+harness init                       # asks your platform, scaffolds .subagents/ + .harness/ + foundation
 harness build-agents               # generate platform-native agent files
 harness agent list                 # browse the registered sub-agents
+harness hooks                      # trigger -> native event-hook wiring plan
 harness check --all                # see the resource-aware orchestration plan
 ```
 
-`init` and `build-agents` default to the `claude-code` platform; pass
-`--platform antigravity|codex` (or set `HARNESS_PLATFORM`) to target another.
+`harness init` asks which agentic platform you use — Claude Code, Antigravity,
+Codex, Cursor, or Copilot. Pass `--platform <id>` (or set `HARNESS_PLATFORM`) to
+skip the prompt; `build-agents` / `hooks` default to `claude-code`.
 
 ## Architecture
 
@@ -65,29 +67,31 @@ harness check --all                # see the resource-aware orchestration plan
    +---------------------+   +-----------------------+   +---------------------+
    |   .subagents/*.yaml |   |  .harness/            |   |  AGENTS.md          |
    |  (source of truth)  |   |   model-map.yaml      |   |  (operating rules:  |
-   |  name, tier,        |   |   allowlists/*.yaml   |   |   fresh-context for  |
-   |  capabilities,      |   |   consent.json        |   |   the main agent)   |
-   |  prompt ...         |   +-----------+-----------+   +---------------------+
-   +----------+----------+               |
+   |  name, tier,        |   |   trigger-map.yaml    |   |   fresh-context for  |
+   |  capabilities,      |   |   allowlists/*.yaml   |   |   the main agent)   |
+   |  triggers, prompt   |   |   consent.json        |   +---------------------+
+   +----------+----------+   +-----------+-----------+
               |                          |
               |   harness build-agents   |
               v                          v
    +-------------------------------------------------------------+
    |                    RESOLUTION PIPELINE                       |
    |                                                             |
-   |   model_tier  --[ model-map ]-->  concrete model            |
-   |   capabilities --[ adapter  ]-->  native tools              |
-   |   requires_fresh_context --> assert web_search + Context7   |
+   |   model_tier  --[ model-map ]--->  concrete model           |
+   |   capabilities --[ adapter ]---->  native tools             |
+   |   triggers    --[ trigger-map ]->  native hooks / fallback  |
+   |   requires_fresh_context ------->  assert web_search+Context7|
    |                              (else: fail with clear error)  |
    +------------------------------+------------------------------+
                                   |
-            +---------------------+---------------------+
-            v                     v                     v
-   +----------------+    +------------------+    +----------------+
-   | Claude Code    |    |   Antigravity    |    |     Codex      |
-   | .claude/agents |    | .antigravity/    |    | .codex/agents  |
-   |   *.md         |    |   agents/*.md    |    |   *.json       |
-   +----------------+    +------------------+    +----------------+
+       +----------+----------+----+-----+----------+-----------+
+       v          v          v          v          v
+  +---------+ +----------+ +-------+ +--------+ +---------+
+  | Claude  | |Antigravity| | Codex | | Cursor | | Copilot |
+  | Code    | | .anti...  | |.codex/| |.cursor/| |.github/ |
+  |.claude/ | | agents/   | |agents/| |agents/ | |copilot/ |
+  +---------+ +----------+ +-------+ +--------+ +---------+
+       \_______ trigger -> native hook (or git-hook / harness fallback) ______/
 
    Orchestrator (harness check) reads the same specs and computes a
    resource-aware parallel batch: CPU cap + 70% memory budget + priority.
@@ -126,9 +130,11 @@ harness check --all                # see the resource-aware orchestration plan
 .subagents/<agent>.yaml      <- canonical, platform-agnostic source of truth
         |  harness build-agents
         v
-.claude/agents/<agent>.md    <- Claude Code   (derived)
-.antigravity/agents/*.md     <- Antigravity   (derived)
-.codex/agents/*.json         <- Codex         (derived)
+.claude/agents/<agent>.md          <- Claude Code   (derived)
+.antigravity/agents/*.md           <- Antigravity   (derived)
+.codex/agents/*.json               <- Codex         (derived)
+.cursor/agents/*.md                <- Cursor        (derived)
+.github/copilot/agents/*.md        <- Copilot       (derived)
 ```
 
 - **Edit the YAML, not the generated files.** Generated files are overwritten on
@@ -139,6 +145,21 @@ harness check --all                # see the resource-aware orchestration plan
   changes.
 - **Capabilities are abstract** (`read` / `write` / `exec` / `web_search` /
   `web_fetch`). The adapter maps them to native tools.
+- **Triggers are abstract** (`on_init` / `on_commit` / `on_check` /
+  `on_demand`); see below.
+
+### Triggers → native event hooks
+
+Different platforms expose different event hooks. Agents declare abstract
+triggers, and `.harness/trigger-map.yaml` resolves each to the active platform's
+**native hook** — or, where the platform has no equivalent, to a Harness
+fallback (an installed **git hook** for `on_commit`, or `harness check` for
+`on_check`). Run `harness hooks` to see the wiring plan.
+
+Because hook APIs drift, the map ships with best-known defaults flagged
+`verified: false`; at `init` the `harness-init-agent` **researches the chosen
+platform's current hook docs** (search + Context7) and refreshes the map before
+wiring. This is why `init` asks which platform you use first.
 
 ### Fresh-context enforcement
 

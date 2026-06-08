@@ -5,6 +5,7 @@ import { runInit } from "./commands/init.js";
 import { runBuildAgents } from "./commands/build-agents.js";
 import { runAgentList, runAgentCreate } from "./commands/agent.js";
 import { runCheck } from "./commands/check.js";
+import { runHooks } from "./commands/hooks.js";
 import { listPlatforms } from "./adapters/registry.js";
 import { log } from "./util/log.js";
 
@@ -22,14 +23,14 @@ program
 program
   .command("init")
   .description("Scaffold .subagents/, .harness/ config, and the foundation.")
-  .option("-p, --platform <platform>", `target platform (${listPlatforms().join("|")})`, DEFAULT_PLATFORM)
+  .option("-p, --platform <platform>", `target platform (${listPlatforms().join("|")}); omit to be asked`)
   .option("-y, --yes", "assume yes for all consent prompts", false)
   .option("--skip-foundation", "skip Spec Kit + Superpowers install", false)
   .option("--dry-run-foundation", "print foundation commands without running", false)
   .action(async (o) => {
     await runInit({
       root: process.cwd(),
-      platform: o.platform,
+      platform: o.platform ?? process.env.HARNESS_PLATFORM,
       assumeYes: o.yes,
       skipFoundation: o.skipFoundation,
       dryRunFoundation: o.dryRunFoundation,
@@ -71,6 +72,14 @@ program
   .option("--all", "include all on_check + on_demand reviewers", false)
   .action(async (o) => {
     await runCheck({ root: process.cwd(), all: o.all });
+  });
+
+program
+  .command("hooks")
+  .description("Show how agent triggers resolve to native event hooks.")
+  .option("-p, --platform <platform>", `target platform (${listPlatforms().join("|")})`, DEFAULT_PLATFORM)
+  .action(async (o) => {
+    await runHooks({ root: process.cwd(), platform: o.platform });
   });
 
 program.parseAsync(process.argv).catch((err: unknown) => {
