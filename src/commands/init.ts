@@ -9,7 +9,12 @@
  */
 import path from "node:path";
 import { promises as fs } from "node:fs";
-import { projectPaths, loadSubagents, loadTriggerMap } from "../project.js";
+import {
+  projectPaths,
+  loadSubagents,
+  loadTriggerMap,
+  type BrainConfig,
+} from "../project.js";
 import type { Trigger } from "../schema.js";
 import {
   resolveTrigger,
@@ -28,6 +33,7 @@ import { log } from "../util/log.js";
 import { installSpecKit } from "../foundation/spec-kit.js";
 import { installSuperpowers } from "../foundation/superpowers.js";
 import { selectPlatforms } from "./select-platform.js";
+import { setupBrain } from "../brain/setup.js";
 import { dumpYaml } from "../util/fsx.js";
 
 export interface InitOptions {
@@ -38,6 +44,14 @@ export interface InitOptions {
   /** Skip the Spec Kit / Superpowers subprocess installs. */
   skipFoundation?: boolean;
   dryRunFoundation?: boolean;
+  /** harness-brain: target path (presence enables it non-interactively). */
+  brainPath?: string;
+  /** harness-brain source: clone | scaffold (default clone). */
+  brainSource?: string;
+  /** Override the default harness-brain repo to clone. */
+  brainRepo?: string;
+  /** Skip harness-brain setup entirely. */
+  skipBrain?: boolean;
 }
 
 async function detectProjectType(
@@ -86,6 +100,19 @@ export async function runInit(opts: InitOptions): Promise<void> {
     `Harness init — ${projectType} project, platform(s)=${platforms.join(", ")}`,
   );
 
+  // 0b. Commit-memory: opt into harness-brain (clone the default repo or
+  //     scaffold the structure locally). Recorded in config below.
+  log.step("Commit-memory (harness-brain)");
+  const brain: BrainConfig = await setupBrain({
+    root: opts.root,
+    brainPath: opts.brainPath,
+    brainSource: opts.brainSource,
+    brainRepo: opts.brainRepo,
+    skipBrain: opts.skipBrain,
+    assumeYes: opts.assumeYes,
+    dryRun: opts.dryRunFoundation,
+  });
+
   const tplDir = await templatesDir();
 
   // 1. .subagents/ + v1 agents (never overwrite).
@@ -122,11 +149,14 @@ export async function runInit(opts: InitOptions): Promise<void> {
   // with a new selection update the set build-agents/hooks target.
   await fs.writeFile(
     paths.config,
-    "# Harness project configuration\n" +
-      dumpYaml({ platforms }),
+    "# Harness project configuration\n" + dumpYaml({ platforms, brain }),
     "utf8",
   );
-  log.ok(`wrote .harness/config.yaml (platforms: ${platforms.join(", ")})`);
+  log.ok(
+    `wrote .harness/config.yaml (platforms: ${platforms.join(", ")}` +
+      (brain.enabled ? `; brain: ${brain.source ?? "configured"}` : "") +
+      ")",
+  );
 
   await ensureDir(paths.allowlistsDir);
   for (const name of ["skills.yaml", "mcp-servers.yaml"]) {

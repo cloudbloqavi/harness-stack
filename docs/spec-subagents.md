@@ -112,6 +112,17 @@ Installed at init, consent-gated
   on Codex/Gemini; skipped on OpenCode. Init installs the compatible subset or
   skips with a note — **never fails** the init over it.
 
+### Optional commit-memory: harness-brain
+
+Init also offers to set up [harness-brain](https://github.com/cloudbloqavi/harness-brain),
+the git-backed commit-memory the `commit-brain-agent` writes into
+([`src/brain/setup.ts`](../src/brain/setup.ts)). It is opt-in. On consent the
+developer picks a path and a source — **clone** the default repo, or
+**scaffold** the bundled structure locally (offline) — recorded under `brain:`
+in `.harness/config.yaml`. A failed clone falls back to a scaffold; init never
+fails over the brain. Non-interactive runs leave it off unless `--brain <path>`
+is passed.
+
 ### Skill recommendation protocol
 
 No skill runs silently. Every use is surfaced as

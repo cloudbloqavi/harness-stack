@@ -41,6 +41,11 @@ prompt: |
       installed git hook for on_commit, or `harness check` for on_check.
     - Report a wiring table: trigger | platform hook | native/fallback | source.
 
+  OFFER COMMIT-MEMORY (harness-brain). Ask whether to set up harness-brain. If
+  yes, ask for a path and whether to CLONE the default repo or SCAFFOLD the
+  structure locally, then record it under brain: in .harness/config.yaml and
+  surface `export HARNESS_BRAIN_PATH=<path>`. If no, skip — never force it.
+
   Then, after consent, install base tooling:
     - Context7 as a base MCP
     - Spec Kit in skills mode (greenfield: `specify init <p>`;

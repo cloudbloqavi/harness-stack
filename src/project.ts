@@ -16,9 +16,25 @@ export interface ProjectPaths {
   readme: string;
 }
 
+export type BrainSource = "clone" | "scaffold";
+
+/** Optional harness-brain (commit-memory) wiring for this project. */
+export interface BrainConfig {
+  /** Whether commit-memory is set up for this project. */
+  enabled: boolean;
+  /** Brain location, stored relative to the project root when possible. */
+  path?: string;
+  /** How the brain was created. */
+  source?: BrainSource;
+  /** Upstream repo when the brain was cloned. */
+  repo?: string;
+}
+
 export interface HarnessConfig {
   /** Agentic platforms enabled for this project (one or more). */
   platforms: string[];
+  /** harness-brain commit-memory configuration (optional). */
+  brain?: BrainConfig;
 }
 
 export function projectPaths(root: string): ProjectPaths {
@@ -82,6 +98,19 @@ export async function loadPlatforms(
     ? cfg.platforms.filter((p): p is string => typeof p === "string")
     : [];
   return platforms.length > 0 ? platforms : [fallback];
+}
+
+/**
+ * The harness-brain configuration for this project, if any. Returns a disabled
+ * config when none is recorded.
+ */
+export async function loadBrainConfig(root: string): Promise<BrainConfig> {
+  const { config } = projectPaths(root);
+  if (!(await pathExists(config))) return { enabled: false };
+  const cfg = await readYaml<Partial<HarnessConfig>>(config);
+  const brain = cfg?.brain;
+  if (!brain || typeof brain !== "object") return { enabled: false };
+  return { ...brain, enabled: Boolean(brain.enabled) };
 }
 
 /** Names of base MCP servers (e.g. context7) declared across all agents. */

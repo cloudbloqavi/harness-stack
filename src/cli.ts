@@ -27,7 +27,11 @@ program
   .option("-p, --platform <platforms>", `target platform(s), comma-separated (${listPlatforms().join("|")}); omit to be asked`)
   .option("-y, --yes", "assume yes for all consent prompts", false)
   .option("--skip-foundation", "skip Spec Kit + Superpowers install", false)
-  .option("--dry-run-foundation", "print foundation commands without running", false)
+  .option("--dry-run-foundation", "print foundation/brain commands without running", false)
+  .option("--brain <path>", "set up harness-brain commit-memory at <path>")
+  .option("--brain-source <mode>", "harness-brain source: clone | scaffold (default clone)")
+  .option("--brain-repo <url>", "override the default harness-brain repo to clone")
+  .option("--skip-brain", "skip harness-brain setup", false)
   .action(async (o) => {
     const raw = o.platform ?? process.env.HARNESS_PLATFORM;
     const platforms = raw
@@ -39,6 +43,10 @@ program
       assumeYes: o.yes,
       skipFoundation: o.skipFoundation,
       dryRunFoundation: o.dryRunFoundation,
+      brainPath: o.brain,
+      brainSource: o.brainSource,
+      brainRepo: o.brainRepo,
+      skipBrain: o.skipBrain,
     });
   });
 

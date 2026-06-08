@@ -42,7 +42,7 @@ npm run harness -- <command>     # e.g. npm run harness -- init
 ## Quick start
 
 ```bash
-harness init                       # asks your platform, scaffolds .subagents/ + .harness/ + foundation
+harness init                       # asks your platform(s) + optional harness-brain, scaffolds .subagents/ + .harness/ + foundation
 harness build-agents               # generate platform-native agent files
 harness agent list                 # browse the registered sub-agents
 harness hooks                      # trigger -> native event-hook wiring plan
@@ -55,6 +55,26 @@ Antigravity, Codex, Cursor, Copilot. **A repo can target several at once**
 `--platform claude-code,cursor` (or set `HARNESS_PLATFORM`). The selection is
 saved to `.harness/config.yaml`, and `build-agents` / `hooks` then default to
 **every configured platform** (add `--platform <id>` to target just one).
+
+### Optional: harness-brain commit-memory
+
+During `init` you can also set up [harness-brain](https://github.com/cloudbloqavi/harness-brain),
+the git-backed commit-memory the `commit-brain-agent` writes into. It is
+**opt-in** — say no and nothing happens. Say yes and you choose a path plus a
+source:
+
+- **clone** the default harness-brain repo (the worked examples, ready to adapt), or
+- **scaffold** the same structure locally (offline) from the bundled template.
+
+```bash
+harness init --brain ../harness-brain                     # clone the default repo
+harness init --brain ./memory --brain-source scaffold     # local skeleton, no network
+harness init --skip-brain                                 # don't set it up
+```
+
+The choice is recorded under `brain:` in `.harness/config.yaml`; point the
+agents at it with `export HARNESS_BRAIN_PATH=<path>`. A failed clone falls back
+to a local scaffold so `init` always completes.
 
 ## Architecture
 
