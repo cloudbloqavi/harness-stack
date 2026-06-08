@@ -45,3 +45,22 @@ jobs:
       - run: npm ci
       - name: Audit (fail on high+)
         run: npm audit --audit-level=high
+
+  brain-template-drift:
+    name: brain template parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone harness-brain (best effort)
+        continue-on-error: true
+        run: git clone --depth 1 https://github.com/cloudbloqavi/harness-brain.git "$RUNNER_TEMP/harness-brain"
+
+      - name: Verify templates/brain matches harness-brain
+        run: |
+          set -e
+          if [ ! -d "$RUNNER_TEMP/harness-brain" ]; then
+            echo "::notice::harness-brain not reachable from CI — skipping drift check. Run \`npm run verify:brain-template\` locally against a sibling checkout."
+            exit 0
+          fi
+          node scripts/check-brain-template.mjs "$RUNNER_TEMP/harness-brain"

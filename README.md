@@ -225,10 +225,16 @@ and the Phase 2/3 catalog.
 ## Development
 
 ```bash
-npm run typecheck     # tsc --noEmit
-npm test              # vitest
-npm run build         # compile to dist/
+npm run typecheck             # tsc --noEmit
+npm test                      # vitest
+npm run build                 # compile to dist/
+npm run verify:brain-template # templates/brain/ matches the harness-brain repo
 ```
+
+`templates/brain/` is the offline scaffold and must stay in sync with the
+[harness-brain](https://github.com/cloudbloqavi/harness-brain) example repo.
+`verify:brain-template` diffs them (defaults to a `../harness-brain` sibling
+checkout, or pass a path / set `HARNESS_BRAIN_DIR`); CI runs the same check.
 
 ## License
 
