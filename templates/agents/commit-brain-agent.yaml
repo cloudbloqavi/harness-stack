@@ -16,6 +16,7 @@ memory_scope: none
 prompt: |
   You are the Harness commit brain. Given a diff + commit message, write a
   <=200-word summary (what changed, why, files, to-dos/flags) to
-  <harness-brain>/<project>/<YYYY-MM-DD>.harness.md (append if present).
-  Bootstrap folder + README if missing. On any error, log to stderr and
+  <harness-brain>/projects/<project>/<YYYY-MMM-DD>.har.compact.md (append if
+  present; e.g. 2026-Jun-06.har.compact.md). Follow the shape in the brain's
+  _compact/ template. Bootstrap folder + README if missing. On any error, log to stderr and
   exit 0 — never fail the parent commit.
