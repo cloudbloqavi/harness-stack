@@ -51,6 +51,51 @@ harness check --all                # see the resource-aware orchestration plan
 `init` and `build-agents` default to the `claude-code` platform; pass
 `--platform antigravity|codex` (or set `HARNESS_PLATFORM`) to target another.
 
+## Architecture
+
+```
+                         +------------------------------+
+                         |        harness CLI           |
+                         |  init · build-agents · agent |
+                         |         · check              |
+                         +---------------+--------------+
+                                         |
+              +--------------------------+--------------------------+
+              v                          v                          v
+   +---------------------+   +-----------------------+   +---------------------+
+   |   .subagents/*.yaml |   |  .harness/            |   |  AGENTS.md          |
+   |  (source of truth)  |   |   model-map.yaml      |   |  (operating rules:  |
+   |  name, tier,        |   |   allowlists/*.yaml   |   |   fresh-context for  |
+   |  capabilities,      |   |   consent.json        |   |   the main agent)   |
+   |  prompt ...         |   +-----------+-----------+   +---------------------+
+   +----------+----------+               |
+              |                          |
+              |   harness build-agents   |
+              v                          v
+   +-------------------------------------------------------------+
+   |                    RESOLUTION PIPELINE                       |
+   |                                                             |
+   |   model_tier  --[ model-map ]-->  concrete model            |
+   |   capabilities --[ adapter  ]-->  native tools              |
+   |   requires_fresh_context --> assert web_search + Context7   |
+   |                              (else: fail with clear error)  |
+   +------------------------------+------------------------------+
+                                  |
+            +---------------------+---------------------+
+            v                     v                     v
+   +----------------+    +------------------+    +----------------+
+   | Claude Code    |    |   Antigravity    |    |     Codex      |
+   | .claude/agents |    | .antigravity/    |    | .codex/agents  |
+   |   *.md         |    |   agents/*.md    |    |   *.json       |
+   +----------------+    +------------------+    +----------------+
+
+   Orchestrator (harness check) reads the same specs and computes a
+   resource-aware parallel batch: CPU cap + 70% memory budget + priority.
+
+   commit-brain-agent --writes--> harness-brain  (per-commit memory)
+   cross-repo-discovery-agent --reads--> harness-brain  (session digest)
+```
+
 ## How it works
 
 ```

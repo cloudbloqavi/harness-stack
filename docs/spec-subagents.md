@@ -105,6 +105,28 @@ provenance labelled and currency confirmed via search/Context7.
 
 [`src/discovery/discover.ts`](../src/discovery/discover.ts):
 
+```
+            task (CLI / trigger / orchestrator)
+                          |
+                          v
+              +-----------------------+
+              | 1. EXACT MATCH?       |   name == task slug
+              +-----------+-----------+
+                   yes |          | no
+                       v          v
+                   [ reuse ]  +-----------------------+
+                              | 2. SIMILAR MATCH?     |   overlap score >= 0.75
+                              +-----------+-----------+
+                                   yes |        | no
+                                       v        v
+                          +------------------+  +-----------------------+
+                          | reuse / extend?  |  | 3. CREATE NEW         |
+                          | (consent-gated)  |  | scaffold -> consent   |
+                          +--------+---------+  | -> write -> README     |
+                              no   |            | -> regenerate adapter |
+                                   +----------->+-----------------------+
+```
+
 1. **Exact match** — `name == task slug` → reuse.
 2. **Similar match** — overlap score ≥ 0.75 → offer reuse/extend.
 3. **Create new** — consent-gated scaffold → regenerate README + adapter.
@@ -115,6 +137,27 @@ provenance labelled and currency confirmed via search/Context7.
 
 [`src/orchestrator/scheduler.ts`](../src/orchestrator/scheduler.ts) —
 `calculateMaxParallel`:
+
+```
+   ready agents
+        |
+        +--> not parallelizable ---------------------> [ run sequentially ]
+        |
+        +--> parallelizable --> sort by priority (high > normal > low)
+                                         |
+                                         v
+            +--------------------------------------------------------+
+            |  fill the batch while BOTH hold:                        |
+            |    batch.length < max(1, cpuCount - 1)      (CPU cap)   |
+            |    memUsed + agent.mem  <=  freeMemMB * 0.7 (mem cap)   |
+            |    (missing max_memory_mb hint => assume 256 MB)        |
+            +----------------------------+---------------------------+
+                          fits |                | does not fit
+                               v                v
+                        [ run in batch ]   [ defer to next batch ]
+
+   e.g. 4 cores / 2 GB free -> CPU cap 3, mem budget ~1.4 GB -> <= 3 in parallel
+```
 
 1. Candidate pool = parallelizable, ready agents.
 2. CPU cap = `max(1, cpuCount - 1)`.
