@@ -54,7 +54,14 @@ jobs:
 
       - name: Clone harness-brain (best effort)
         continue-on-error: true
-        run: git clone --depth 1 https://github.com/cloudbloqavi/harness-brain.git "$RUNNER_TEMP/harness-brain"
+        env:
+          # Compare against the matching branch (the brain's changes live on the
+          # same feature branch pre-merge); fall back to the default branch.
+          BRAIN_BRANCH: ${{ github.head_ref || github.ref_name }}
+          BRAIN_URL: https://github.com/cloudbloqavi/harness-brain.git
+        run: |
+          git clone --depth 1 --branch "$BRAIN_BRANCH" "$BRAIN_URL" "$RUNNER_TEMP/harness-brain" \
+            || git clone --depth 1 "$BRAIN_URL" "$RUNNER_TEMP/harness-brain"
 
       - name: Verify templates/brain matches harness-brain
         run: |
