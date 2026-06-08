@@ -92,8 +92,32 @@ harness check --all                # see the resource-aware orchestration plan
    Orchestrator (harness check) reads the same specs and computes a
    resource-aware parallel batch: CPU cap + 70% memory budget + priority.
 
-   commit-brain-agent --writes--> harness-brain  (per-commit memory)
-   cross-repo-discovery-agent --reads--> harness-brain  (session digest)
+   Agent artifacts:
+     commit-brain-agent        --writes--> harness-brain   (per-commit memory)
+     cross-repo-discovery-agent --reads--> harness-brain   (session digest)
+     dependency-audit-agent    --writes--> DEPENDENCIES.md (latest/EOL/deprecated)
+     test-author-agent         --writes--> test files      (consent-gated)
+```
+
+## Agent roster (by trigger)
+
+```
+   on_init ───────────────┐   project start (greenfield & brownfield)
+     harness-init-agent    |   classify, gap report, install base tooling
+     spec-author-agent     |   Spec Kit: constitution -> spec -> plan -> tasks
+     dependency-audit-agent|   build/refresh DEPENDENCIES.md
+                           |
+   on_demand ─────────────┤   you ask, or the orchestrator routes a task
+     skills-router-agent   |   rank skills (consent-gated)
+     mcp-router-agent      |   rank MCP servers (consent-gated)
+     dependency-audit-agent|   re-audit dependencies on request
+     test-author-agent     |   review tests; author missing ones (on consent)
+                           |
+   on_check ──────────────┤   harness check [--all]
+     test-author-agent     |   coverage/quality review
+                           |
+   on_commit ─────────────┘   git commit hook
+     commit-brain-agent    |   summarise the diff into harness-brain
 ```
 
 ## How it works
