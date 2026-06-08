@@ -148,6 +148,7 @@ high-priority first, non-parallelizable agents sequenced.
 | `mcp-router-agent` | fast | Rank MCP servers from the curated allowlist |
 | `commit-brain-agent` | fast | Write per-commit summaries into `harness-brain` |
 | `dependency-audit-agent` | reasoning | Maintain `DEPENDENCIES.md` (latest / outdated / deprecated / EOL) from live data |
+| `test-author-agent` | reasoning | Review unit tests, surface gaps, author missing tests on consent |
 
 See [`docs/spec-subagents.md`](docs/spec-subagents.md) for the full design spec
 and the Phase 2/3 catalog.

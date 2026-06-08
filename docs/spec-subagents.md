@@ -178,6 +178,7 @@ provenance labelled and currency confirmed via search/Context7.
 | `mcp-router-agent` | fast | on_demand | Rank MCP servers from the curated allowlist |
 | `commit-brain-agent` | fast | on_commit | Write per-commit summaries into `harness-brain` |
 | `dependency-audit-agent` | reasoning | on_init, on_demand | Maintain `DEPENDENCIES.md`: latest/outdated/deprecated/EOL per package, from live data |
+| `test-author-agent` | reasoning | on_demand, on_check | Review unit tests, surface coverage/quality gaps, author missing tests on consent |
 
 ### Phase 2 (P1, should-have)
 
@@ -187,7 +188,10 @@ provenance labelled and currency confirmed via search/Context7.
 ### Phase 3 (P2, future)
 
 `architectural-drift-agent`, `scanner-orchestration-agent`,
-`model-selection-agent`, `test-generation-agent`, `changelog-agent`.
+`model-selection-agent`, `changelog-agent`.
+
+> `test-generation-agent` from the original P2 list is **delivered early** as
+> `test-author-agent` (Phase 1 table above), which also reviews existing tests.
 
 ## Requirements coverage (v1 / P0)
 

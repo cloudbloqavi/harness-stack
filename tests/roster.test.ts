@@ -29,7 +29,7 @@ async function loadModelMap(): Promise<ModelMap> {
 describe("v1 agent templates", () => {
   it("all parse against the canonical schema", async () => {
     const agents = await loadTemplateAgents();
-    expect(agents.length).toBe(6);
+    expect(agents.length).toBe(7);
     expect(agents.map((a) => a.name).sort()).toEqual([
       "commit-brain-agent",
       "dependency-audit-agent",
@@ -37,6 +37,7 @@ describe("v1 agent templates", () => {
       "mcp-router-agent",
       "skills-router-agent",
       "spec-author-agent",
+      "test-author-agent",
     ]);
   });
 });
@@ -50,7 +51,7 @@ describe("buildRoster across platforms (R3, R5, R7 acceptance)", () => {
     for (const platform of ["claude-code", "antigravity", "codex"]) {
       const report = buildRoster(agents, { platform, modelMap, baseMcpNames });
       expect(report.errors, `errors on ${platform}: ${report.errors.join("; ")}`).toEqual([]);
-      expect(report.results.length).toBe(6);
+      expect(report.results.length).toBe(7);
       for (const r of report.results) {
         expect(r.file.contents.length).toBeGreaterThan(0);
         expect(r.file.relPath).toContain(r.agent.name);
