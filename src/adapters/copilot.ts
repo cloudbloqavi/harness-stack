@@ -5,14 +5,24 @@
  * agent file; the harness-init-agent confirms the exact placement/format
  * against current Copilot docs (formats drift).
  */
-import type { GeneratedFile, PlatformAdapter, ResolvedAgent } from "./types.js";
+import type {
+  GeneratedFile,
+  ManualContext,
+  PlatformAdapter,
+  ResolvedAgent,
+} from "./types.js";
+import { launcherBody, withFrontmatter } from "./manual.js";
 
 export const copilotAdapter: PlatformAdapter = {
   id: "copilot",
   displayName: "GitHub Copilot",
+  // Verified: Copilot custom agents are .md files in .github/agents/
+  // (decision-routed, selectable / via /agent); prompt files are
+  // .github/prompts/<name>.prompt.md (manual /<name>).
+  // https://code.visualstudio.com/docs/agent-customization/custom-agents
   skillSupport: {
-    verified: false,
-    note: "Copilot command/skill mechanism not yet mapped — the harness-init-agent confirms it via research.",
+    verified: true,
+    note: ".github/agents/<cmd>.md (decision-routed) + .github/prompts/<cmd>.prompt.md (/<cmd>).",
   },
   render({ agent, model, tools }: ResolvedAgent): GeneratedFile {
     const body = [
@@ -36,5 +46,28 @@ export const copilotAdapter: PlatformAdapter = {
       relPath: `.github/copilot/agents/${agent.name}.md`,
       contents: body + "\n",
     };
+  },
+
+  renderManual({ agent, command, wantsSkill, wantsCommand }: ManualContext): GeneratedFile[] {
+    const files: GeneratedFile[] = [];
+    if (wantsSkill) {
+      files.push({
+        relPath: `.github/agents/${command}.md`,
+        contents: withFrontmatter(
+          { name: command, description: agent.description.trim() },
+          launcherBody(agent, "skill"),
+        ),
+      });
+    }
+    if (wantsCommand) {
+      files.push({
+        relPath: `.github/prompts/${command}.prompt.md`,
+        contents: withFrontmatter(
+          { mode: "agent", description: `Run the ${agent.name} workflow` },
+          launcherBody(agent, "command"),
+        ),
+      });
+    }
+    return files;
   },
 };

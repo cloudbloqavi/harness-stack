@@ -5,14 +5,23 @@
  * small metadata header and the prompt body. Fresh context on Antigravity is
  * delivered through Gemini search grounding, surfaced via the resolved tools.
  */
-import type { GeneratedFile, PlatformAdapter, ResolvedAgent } from "./types.js";
+import type {
+  GeneratedFile,
+  ManualContext,
+  PlatformAdapter,
+  ResolvedAgent,
+} from "./types.js";
+import { launcherBody, withFrontmatter } from "./manual.js";
 
 export const antigravityAdapter: PlatformAdapter = {
   id: "antigravity",
   displayName: "Antigravity",
+  // Verified: Antigravity reads the .agents/ directory — Agent Skills in
+  // .agents/skills/<name>/SKILL.md (agent-triggered) and Workflows in
+  // .agents/workflows/<name>.md (manual /<name>). https://antigravity.google/docs/skills
   skillSupport: {
-    verified: false,
-    note: "Antigravity command/skill mechanism not yet mapped — the harness-init-agent confirms it via research.",
+    verified: true,
+    note: ".agents/skills/<cmd>/SKILL.md (decision-routed) + .agents/workflows/<cmd>.md (/<cmd>).",
   },
   render({ agent, model, tools }: ResolvedAgent): GeneratedFile {
     const header = [
@@ -39,5 +48,28 @@ export const antigravityAdapter: PlatformAdapter = {
       relPath: `.antigravity/agents/${agent.name}.md`,
       contents: header + "\n",
     };
+  },
+
+  renderManual({ agent, command, wantsSkill, wantsCommand }: ManualContext): GeneratedFile[] {
+    const files: GeneratedFile[] = [];
+    if (wantsSkill) {
+      files.push({
+        relPath: `.agents/skills/${command}/SKILL.md`,
+        contents: withFrontmatter(
+          { name: command, description: agent.description.trim() },
+          launcherBody(agent, "skill"),
+        ),
+      });
+    }
+    if (wantsCommand) {
+      files.push({
+        relPath: `.agents/workflows/${command}.md`,
+        contents: withFrontmatter(
+          { description: `Run the ${agent.name} workflow` },
+          launcherBody(agent, "workflow"),
+        ),
+      });
+    }
+    return files;
   },
 };

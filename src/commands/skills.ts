@@ -1,33 +1,17 @@
 /**
  * `harness skills` — show how each sub-agent is exposed for invocation on the
  * active platform: as a decision-routable skill, a manual slash command, or
- * sub-agent dispatch only. Mirrors `harness hooks` for the invocation surface.
+ * sub-agent dispatch only, with the concrete files each produces. Mirrors
+ * `harness hooks` for the invocation surface.
  */
 import { loadSubagents } from "../project.js";
-import {
-  commandName,
-  exposesSkill,
-  exposesCommand,
-  type Subagent,
-} from "../schema.js";
+import { commandName, exposesSkill, exposesCommand } from "../schema.js";
 import { getAdapter } from "../adapters/registry.js";
 import { log } from "../util/log.js";
 
 export interface SkillsOptions {
   root: string;
   platform: string;
-}
-
-function surfaces(agent: Subagent, hasSkill: boolean, hasCommand: boolean): string {
-  const cmd = commandName(agent);
-  const parts: string[] = [];
-  if (exposesSkill(agent)) {
-    parts.push(hasSkill ? "skill (decision-routed)" : "skill (pending)");
-  }
-  if (exposesCommand(agent)) {
-    parts.push(hasCommand ? `/${cmd} (manual)` : `/${cmd} (pending)`);
-  }
-  return parts.length > 0 ? parts.join(", ") : "subagent dispatch only";
 }
 
 export async function runSkills(opts: SkillsOptions): Promise<void> {
@@ -37,29 +21,43 @@ export async function runSkills(opts: SkillsOptions): Promise<void> {
     return;
   }
   const adapter = getAdapter(opts.platform);
-  const hasSkill = Boolean(adapter.renderSkill);
-  const hasCommand = Boolean(adapter.renderCommand);
 
   log.info(
     `${opts.platform}:` +
       (adapter.skillSupport.verified
-        ? ""
+        ? ` ✓ verified — ${adapter.skillSupport.note ?? ""}`
         : "  (skill/command mechanism unverified — pending init research)"),
   );
 
   let pending = 0;
   for (const agent of [...agents].sort((a, b) => a.name.localeCompare(b.name))) {
-    log.detail(`  ${agent.name}  ->  ${surfaces(agent, hasSkill, hasCommand)}`);
-    if ((exposesSkill(agent) || exposesCommand(agent)) && !hasSkill && !hasCommand) {
-      pending++;
+    const wantsSkill = exposesSkill(agent);
+    const wantsCommand = exposesCommand(agent);
+
+    if (!wantsSkill && !wantsCommand) {
+      log.detail(`  ${agent.name}  ->  subagent dispatch only`);
+      continue;
     }
+    if (!adapter.renderManual) {
+      log.detail(`  ${agent.name}  ->  pending (${opts.platform} mechanism unmapped)`);
+      pending++;
+      continue;
+    }
+    const files = adapter.renderManual({
+      agent,
+      platform: opts.platform,
+      command: commandName(agent),
+      wantsSkill,
+      wantsCommand,
+    });
+    log.detail(`  ${agent.name}  ->  ${files.map((f) => f.relPath).join(", ")}`);
   }
 
   if (pending > 0) {
     log.warn(
       `  ${pending} agent(s) request a manual surface ${opts.platform} can't emit yet. ` +
         `Sub-agent dispatch works now; the harness-init-agent will wire the native ` +
-        `skill/command mechanism via search + Context7.`,
+        `mechanism via search + Context7.`,
     );
   }
 }

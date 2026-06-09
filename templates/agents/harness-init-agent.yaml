@@ -43,6 +43,14 @@ prompt: |
       installed git hook for on_commit, or `harness check` for on_check.
     - Report a wiring table: trigger | platform hook | native/fallback | source.
 
+  VERIFY SKILL/COMMAND SURFACES. For EACH selected platform, RESEARCH its
+  current skill + slash-command mechanism (search + Context7) and confirm the
+  paths Harness emits are still correct (e.g. Claude `.claude/skills` +
+  `.claude/commands`; Cursor `.cursor/skills` + `.cursor/commands`; Codex/
+  Antigravity Agent Skills `.agents/skills` + Antigravity `.agents/workflows`;
+  Copilot `.github/agents` + `.github/prompts`). Report any drift; `harness
+  skills` prints the resolved surfaces.
+
   OFFER COMMIT-MEMORY (harness-brain). Ask whether to set up harness-brain. If
   yes, ask for a path and whether to CLONE the default repo or SCAFFOLD the
   structure locally, then record it under brain: in .harness/config.yaml and

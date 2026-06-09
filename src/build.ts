@@ -85,21 +85,23 @@ export function buildRoster(
     // Optional manual surfaces: a decision-routable skill and/or a slash
     // command, each a thin launcher that dispatches this same sub-agent.
     const manualFiles: GeneratedFile[] = [];
-    const wantsManual = exposesSkill(agent) || exposesCommand(agent);
-    if (wantsManual) {
-      const ctx = {
-        agent,
-        platform: opts.platform,
-        command: commandName(agent),
-      };
-      if (exposesSkill(agent) && adapter.renderSkill) {
-        manualFiles.push(adapter.renderSkill(ctx));
+    const wantsSkill = exposesSkill(agent);
+    const wantsCommand = exposesCommand(agent);
+    if (wantsSkill || wantsCommand) {
+      if (adapter.renderManual) {
+        manualFiles.push(
+          ...adapter.renderManual({
+            agent,
+            platform: opts.platform,
+            command: commandName(agent),
+            wantsSkill,
+            wantsCommand,
+          }),
+        );
+      } else {
+        // Platform mapping not yet available — sub-agent dispatch still works.
+        pendingManual++;
       }
-      if (exposesCommand(agent) && adapter.renderCommand) {
-        manualFiles.push(adapter.renderCommand(ctx));
-      }
-      // Platform mapping not yet available — sub-agent dispatch still works.
-      if (!adapter.renderSkill && !adapter.renderCommand) pendingManual++;
     }
 
     results.push({ agent, file, manualFiles, warnings });

@@ -18,12 +18,16 @@ export interface GeneratedFile {
   contents: string;
 }
 
-/** Context for rendering a manual/skill entry point that wraps a sub-agent. */
+/** Context for rendering an agent's manual/skill entry points. */
 export interface ManualContext {
   agent: Subagent;
   platform: string;
   /** Resolved slash/skill command name. */
   command: string;
+  /** A decision-routable skill surface is requested. */
+  wantsSkill: boolean;
+  /** A manual slash-command surface is requested. */
+  wantsCommand: boolean;
 }
 
 export interface PlatformAdapter {
@@ -34,12 +38,14 @@ export interface PlatformAdapter {
   render(resolved: ResolvedAgent): GeneratedFile;
   /**
    * Whether the skill/command mechanism is confirmed against the platform's
-   * current docs. `false` means the bundled mapping is a best-known default
-   * the harness-init-agent refreshes via research (mirrors the trigger map).
+   * current docs. The bundled mappings are verified; the harness-init-agent
+   * re-checks them at init (APIs drift), mirroring the trigger map.
    */
   readonly skillSupport: { verified: boolean; note?: string };
-  /** Decision-routable skill artifact (omit while the mapping is pending). */
-  renderSkill?(ctx: ManualContext): GeneratedFile;
-  /** Manual slash-command artifact (omit while the mapping is pending). */
-  renderCommand?(ctx: ManualContext): GeneratedFile;
+  /**
+   * Render the requested manual surfaces (skill and/or command) as the
+   * platform's native files. Returns zero or more files — some platforms
+   * satisfy both surfaces with a single native artifact.
+   */
+  renderManual?(ctx: ManualContext): GeneratedFile[];
 }

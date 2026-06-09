@@ -97,14 +97,25 @@ may be invoked via `expose_as` (`src/schema.ts`):
   (Claude Code: `.claude/commands/<command>.md`).
 
 The slash/skill name is `command:` or the agent name minus `-agent`. Generated
-skill/command files are **thin launchers** that dispatch the same sub-agent, so
-the `.subagents` prompt stays the single source of truth. Light routing agents
-default to skill + command; heavier fresh-context agents to a manual command
-only. As with hooks, the native mechanism differs per platform: Claude Code is
-verified (`adapter.skillSupport.verified`), and other platforms report **pending**
-until the `harness-init-agent` confirms their command/skill mechanism via
-research. `harness skills` prints each agent's surfaces
-(`src/commands/skills.ts`, `src/adapters/*`).
+skill/command files are **thin launchers** that point at `.subagents/<name>.yaml`
+(the canonical spec) as the single source of truth. Light routing agents default
+to skill + command; heavier fresh-context agents to a manual command only.
+
+Each platform maps to its **native, verified** mechanism (`adapter.renderManual`,
+`adapter.skillSupport.verified === true` for all five):
+
+| Platform | skill | command |
+| --- | --- | --- |
+| Claude Code | `.claude/skills/<c>/SKILL.md` | `.claude/commands/<c>.md` |
+| Cursor | `.cursor/skills/<c>/SKILL.md` | `.cursor/commands/<c>.md` |
+| Codex | `.agents/skills/<c>/SKILL.md` (implicit) | same skill, explicit `$<c>` |
+| Antigravity | `.agents/skills/<c>/SKILL.md` | `.agents/workflows/<c>.md` |
+| GitHub Copilot | `.github/agents/<c>.md` | `.github/prompts/<c>.prompt.md` |
+
+Cursor, Codex, and Antigravity share the portable **Agent Skills** standard
+(`SKILL.md`). As with hooks, mechanisms drift, so the `harness-init-agent`
+re-checks them at init via search + Context7. `harness skills` prints each
+agent's surfaces (`src/commands/skills.ts`, `src/adapters/*`).
 
 ## Fresh-context mandate
 

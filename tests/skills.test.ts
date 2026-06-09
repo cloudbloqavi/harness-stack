@@ -7,6 +7,9 @@ import {
 } from "../src/schema.js";
 import { claudeCodeAdapter } from "../src/adapters/claude-code.js";
 import { cursorAdapter } from "../src/adapters/cursor.js";
+import { codexAdapter } from "../src/adapters/codex.js";
+import { antigravityAdapter } from "../src/adapters/antigravity.js";
+import { copilotAdapter } from "../src/adapters/copilot.js";
 import { buildRoster } from "../src/build.js";
 import type { ModelMap } from "../src/resolution/model-resolver.js";
 
@@ -43,31 +46,62 @@ describe("schema: invocation surfaces", () => {
   });
 });
 
-describe("claude-code adapter: skill + command artifacts", () => {
-  const ctx = { agent: agent({ command: "demo" }), platform: "claude-code", command: "demo" };
+function manualCtx(overrides: Partial<{ wantsSkill: boolean; wantsCommand: boolean }> = {}) {
+  return {
+    agent: agent({ command: "demo" }),
+    platform: "claude-code",
+    command: "demo",
+    wantsSkill: true,
+    wantsCommand: true,
+    ...overrides,
+  };
+}
 
-  it("is verified and emits a SKILL.md launcher", () => {
+describe("claude-code adapter: skill + command artifacts", () => {
+  it("is verified and emits a SKILL.md + slash command (thin launchers)", () => {
     expect(claudeCodeAdapter.skillSupport.verified).toBe(true);
-    const f = claudeCodeAdapter.renderSkill!(ctx);
-    expect(f.relPath).toBe(".claude/skills/demo/SKILL.md");
-    expect(f.contents).toContain("name: demo");
-    // Thin launcher → dispatches the sub-agent rather than inlining the prompt.
-    expect(f.contents).toContain("demo-agent");
-    expect(f.contents).toContain(".claude/agents/demo-agent.md");
+    const files = claudeCodeAdapter.renderManual!(manualCtx());
+    const paths = files.map((f) => f.relPath).sort();
+    expect(paths).toEqual([".claude/commands/demo.md", ".claude/skills/demo/SKILL.md"]);
+    const skill = files.find((f) => f.relPath.endsWith("SKILL.md"))!;
+    expect(skill.contents).toContain("name: demo");
+    // Thin launcher → points at the canonical spec, not an inlined prompt.
+    expect(skill.contents).toContain(".subagents/demo-agent.yaml");
   });
 
-  it("emits a slash command file", () => {
-    const f = claudeCodeAdapter.renderCommand!(ctx);
-    expect(f.relPath).toBe(".claude/commands/demo.md");
-    expect(f.contents).toContain("demo-agent");
+  it("emits only the requested surface", () => {
+    const skillOnly = claudeCodeAdapter.renderManual!(manualCtx({ wantsCommand: false }));
+    expect(skillOnly.map((f) => f.relPath)).toEqual([".claude/skills/demo/SKILL.md"]);
+    const cmdOnly = claudeCodeAdapter.renderManual!(manualCtx({ wantsSkill: false }));
+    expect(cmdOnly.map((f) => f.relPath)).toEqual([".claude/commands/demo.md"]);
   });
 });
 
-describe("cursor adapter: manual surface pending", () => {
-  it("declares skill support unverified and has no renderers yet", () => {
-    expect(cursorAdapter.skillSupport.verified).toBe(false);
-    expect(cursorAdapter.renderSkill).toBeUndefined();
-    expect(cursorAdapter.renderCommand).toBeUndefined();
+describe("platform-specific verified mappings", () => {
+  const base = { agent: agent({ command: "demo" }), command: "demo", wantsSkill: true, wantsCommand: true };
+
+  it("cursor: .cursor/skills + .cursor/commands", () => {
+    expect(cursorAdapter.skillSupport.verified).toBe(true);
+    const paths = cursorAdapter.renderManual!({ ...base, platform: "cursor" }).map((f) => f.relPath).sort();
+    expect(paths).toEqual([".cursor/commands/demo.md", ".cursor/skills/demo/SKILL.md"]);
+  });
+
+  it("codex: single Agent-Skill file; command-only disables implicit invocation", () => {
+    const both = codexAdapter.renderManual!({ ...base, platform: "codex" });
+    expect(both.map((f) => f.relPath)).toEqual([".agents/skills/demo/SKILL.md"]);
+    expect(both[0]!.contents).not.toContain("allow_implicit_invocation");
+    const cmdOnly = codexAdapter.renderManual!({ ...base, platform: "codex", wantsSkill: false });
+    expect(cmdOnly[0]!.contents).toContain("allow_implicit_invocation: false");
+  });
+
+  it("antigravity: .agents/skills + .agents/workflows", () => {
+    const paths = antigravityAdapter.renderManual!({ ...base, platform: "antigravity" }).map((f) => f.relPath).sort();
+    expect(paths).toEqual([".agents/skills/demo/SKILL.md", ".agents/workflows/demo.md"]);
+  });
+
+  it("copilot: .github/agents + .github/prompts", () => {
+    const paths = copilotAdapter.renderManual!({ ...base, platform: "copilot" }).map((f) => f.relPath).sort();
+    expect(paths).toEqual([".github/agents/demo.md", ".github/prompts/demo.prompt.md"]);
   });
 });
 
@@ -98,7 +132,7 @@ describe("buildRoster: manual files", () => {
     expect(report.notes).toEqual([]);
   });
 
-  it("notes pending manual surfaces on an unmapped platform (cursor)", () => {
+  it("emits a verified command file on cursor with no pending note", () => {
     const agents = [
       agent({ name: "router-agent", expose_as: ["subagent", "command"], command: "route" }),
     ];
@@ -108,8 +142,9 @@ describe("buildRoster: manual files", () => {
       baseMcpNames: new Set(),
     });
     expect(report.errors).toEqual([]);
-    expect(report.results[0]!.manualFiles).toEqual([]);
-    expect(report.notes.length).toBe(1);
-    expect(report.notes[0]).toContain("cursor");
+    expect(report.results[0]!.manualFiles.map((f) => f.relPath)).toEqual([
+      ".cursor/commands/route.md",
+    ]);
+    expect(report.notes).toEqual([]);
   });
 });

@@ -5,14 +5,23 @@
  * file with a metadata header; the harness-init-agent confirms the exact
  * placement/format against current Cursor docs (formats drift).
  */
-import type { GeneratedFile, PlatformAdapter, ResolvedAgent } from "./types.js";
+import type {
+  GeneratedFile,
+  ManualContext,
+  PlatformAdapter,
+  ResolvedAgent,
+} from "./types.js";
+import { launcherBody, withFrontmatter } from "./manual.js";
 
 export const cursorAdapter: PlatformAdapter = {
   id: "cursor",
   displayName: "Cursor",
+  // Verified (Cursor 2.4): Agent Skills (.cursor/skills/<name>/SKILL.md, with
+  // disable-model-invocation to force manual) + Commands (.cursor/commands/<name>.md).
+  // https://cursor.com/docs/skills
   skillSupport: {
-    verified: false,
-    note: "Cursor command/skill mechanism not yet mapped — the harness-init-agent confirms it via research.",
+    verified: true,
+    note: ".cursor/skills/<cmd>/SKILL.md (decision-routed) + .cursor/commands/<cmd>.md (/<cmd>).",
   },
   render({ agent, model, tools }: ResolvedAgent): GeneratedFile {
     const body = [
@@ -33,5 +42,26 @@ export const cursorAdapter: PlatformAdapter = {
       agent.prompt.trim(),
     ].join("\n");
     return { relPath: `.cursor/agents/${agent.name}.md`, contents: body + "\n" };
+  },
+
+  renderManual({ agent, command, wantsSkill, wantsCommand }: ManualContext): GeneratedFile[] {
+    const files: GeneratedFile[] = [];
+    if (wantsSkill) {
+      files.push({
+        relPath: `.cursor/skills/${command}/SKILL.md`,
+        contents: withFrontmatter(
+          { name: command, description: agent.description.trim() },
+          launcherBody(agent, "skill"),
+        ),
+      });
+    }
+    if (wantsCommand) {
+      // Cursor commands are plain markdown; the filename is the slash name.
+      files.push({
+        relPath: `.cursor/commands/${command}.md`,
+        contents: `# ${command}\n\n${launcherBody(agent, "command")}\n`,
+      });
+    }
+    return files;
   },
 };
