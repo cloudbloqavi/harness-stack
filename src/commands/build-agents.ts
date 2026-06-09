@@ -23,11 +23,11 @@ export interface BuildAgentsOptions {
 
 export async function runBuildAgents(
   opts: BuildAgentsOptions,
-): Promise<{ written: number }> {
+): Promise<{ written: number; manual: number }> {
   const agents = await loadSubagents(opts.root);
   if (agents.length === 0) {
     log.warn("No .subagents/*.yaml found. Run `harness init` first.");
-    return { written: 0 };
+    return { written: 0, manual: 0 };
   }
   const modelMap = await loadModelMap(opts.root);
   const baseMcpNames = collectBaseMcpNames(agents);
@@ -47,12 +47,24 @@ export async function runBuildAgents(
   }
 
   log.step(`Building ${report.results.length} agent(s) for ${opts.platform}`);
+  let manualWritten = 0;
   for (const r of report.results) {
     const dest = path.join(opts.root, r.file.relPath);
     await ensureDir(path.dirname(dest));
     await fs.writeFile(dest, r.file.contents, "utf8");
     log.ok(`${r.agent.name} → ${r.file.relPath}`);
+    for (const m of r.manualFiles) {
+      const mdest = path.join(opts.root, m.relPath);
+      await ensureDir(path.dirname(mdest));
+      await fs.writeFile(mdest, m.contents, "utf8");
+      log.detail(`  ↳ ${m.relPath}`);
+      manualWritten++;
+    }
     r.warnings.forEach((w) => log.warn(`  ${w}`));
   }
-  return { written: report.results.length };
+  report.notes.forEach((n) => log.warn(n));
+  if (manualWritten > 0) {
+    log.info(`${manualWritten} skill/command artifact(s) generated.`);
+  }
+  return { written: report.results.length, manual: manualWritten };
 }

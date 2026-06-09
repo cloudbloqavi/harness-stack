@@ -10,6 +10,10 @@ import type { GeneratedFile, PlatformAdapter, ResolvedAgent } from "./types.js";
 export const cursorAdapter: PlatformAdapter = {
   id: "cursor",
   displayName: "Cursor",
+  skillSupport: {
+    verified: false,
+    note: "Cursor command/skill mechanism not yet mapped — the harness-init-agent confirms it via research.",
+  },
   render({ agent, model, tools }: ResolvedAgent): GeneratedFile {
     const body = [
       `# ${agent.name}`,

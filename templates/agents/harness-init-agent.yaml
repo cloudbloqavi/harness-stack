@@ -10,6 +10,8 @@ description: >
 goal: Produce an accurate gap report and scaffold a working, spec-driven harness baseline.
 type: on-demand
 triggers: [on_init]
+expose_as: [subagent, command]
+command: harness-init
 model_tier: reasoning
 capabilities: [read, write, exec, web_search]
 requires_fresh_context: true

@@ -11,6 +11,8 @@ description: >
 goal: Produce and keep DEPENDENCIES.md current with latest/outdated/deprecated/EOL status per package.
 type: on-demand
 triggers: [on_init, on_demand]
+expose_as: [subagent, command]
+command: deps-audit
 model_tier: reasoning
 capabilities: [read, write, exec, web_search, web_fetch]
 requires_fresh_context: true

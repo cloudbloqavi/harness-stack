@@ -6,6 +6,7 @@ import { runBuildAgents } from "./commands/build-agents.js";
 import { runAgentList, runAgentCreate } from "./commands/agent.js";
 import { runCheck } from "./commands/check.js";
 import { runHooks } from "./commands/hooks.js";
+import { runSkills } from "./commands/skills.js";
 import { loadPlatforms } from "./project.js";
 import { listPlatforms } from "./adapters/registry.js";
 import { log } from "./util/log.js";
@@ -104,6 +105,20 @@ program
       : await loadPlatforms(root, DEFAULT_PLATFORM);
     for (const platform of platforms) {
       await runHooks({ root, platform });
+    }
+  });
+
+program
+  .command("skills")
+  .description("Show how agents are exposed as skills / slash commands.")
+  .option("-p, --platform <platform>", `target one platform (${listPlatforms().join("|")}); default: all configured`)
+  .action(async (o) => {
+    const root = process.cwd();
+    const platforms = o.platform
+      ? [o.platform]
+      : await loadPlatforms(root, DEFAULT_PLATFORM);
+    for (const platform of platforms) {
+      await runSkills({ root, platform });
     }
   });
 

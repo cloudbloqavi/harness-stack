@@ -10,6 +10,8 @@ description: >
 goal: Produce approved spec / plan / task artefacts via Spec Kit for any project type.
 type: on-demand
 triggers: [on_demand, on_init]
+expose_as: [subagent, command]
+command: author-spec
 model_tier: reasoning
 capabilities: [read, write, exec, web_search]
 requires_fresh_context: true

@@ -7,6 +7,8 @@ description: >
 goal: Produce a detailed per-repo log and a compact per-brain rollup in harness-brain per commit.
 type: on-demand
 triggers: [on_commit]
+expose_as: [subagent, skill, command]
+command: commit-brain
 model_tier: fast
 capabilities: [read, write, exec]
 requires_fresh_context: false

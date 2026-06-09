@@ -28,6 +28,16 @@ export const TRIGGERS = [
 ] as const;
 export type Trigger = (typeof TRIGGERS)[number];
 
+/**
+ * Invocation surfaces an agent can be exposed on, in addition to the
+ * always-generated sub-agent file:
+ *   - `subagent` — orchestrator/main-agent dispatch (the default).
+ *   - `skill`    — a decision-routable skill the main agent can choose to run.
+ *   - `command`  — a manual slash command the developer invokes directly.
+ */
+export const EXPOSURES = ["subagent", "skill", "command"] as const;
+export type Exposure = (typeof EXPOSURES)[number];
+
 const semver = z
   .string()
   .regex(/^\d+\.\d+\.\d+$/, "version must be semver, e.g. 1.0.0");
@@ -100,6 +110,12 @@ export const subagentSchema = z
     type: z.enum(AGENT_TYPES),
     triggers: z.array(z.enum(TRIGGERS)).default(["on_demand"]),
 
+    // Invocation surfaces (sub-agent file is always generated; these add
+    // decision-routable skill and/or manual slash-command entry points).
+    expose_as: z.array(z.enum(EXPOSURES)).default(["subagent"]),
+    /** Explicit slash/skill command name; defaults to the de-suffixed name. */
+    command: kebab.optional(),
+
     // Model (abstract)
     model_tier: z.enum(MODEL_TIERS),
     model_overrides: z.record(z.string(), z.string()).default({}),
@@ -125,6 +141,27 @@ export const subagentSchema = z
   .strict();
 
 export type Subagent = z.infer<typeof subagentSchema>;
+
+/**
+ * The slash/skill command name for an agent: the explicit `command` when set,
+ * otherwise the agent name with a trailing `-agent` stripped
+ * (e.g. `commit-brain-agent` → `commit-brain`).
+ */
+export function commandName(
+  agent: Pick<Subagent, "name" | "command">,
+): string {
+  return agent.command ?? agent.name.replace(/-agent$/, "");
+}
+
+/** Does this agent want a decision-routable skill surface? */
+export function exposesSkill(agent: Pick<Subagent, "expose_as">): boolean {
+  return agent.expose_as.includes("skill");
+}
+
+/** Does this agent want a manual slash-command surface? */
+export function exposesCommand(agent: Pick<Subagent, "expose_as">): boolean {
+  return agent.expose_as.includes("command");
+}
 
 /** A validation failure with a human-friendly, source-located message. */
 export class SubagentValidationError extends Error {

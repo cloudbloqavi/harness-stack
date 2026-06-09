@@ -6,6 +6,8 @@ description: >
 goal: Surface the most relevant MCP servers for a task and install them on consent.
 type: on-demand
 triggers: [on_demand]
+expose_as: [subagent, skill, command]
+command: route-mcp
 model_tier: fast
 capabilities: [read, exec, web_search, web_fetch]
 requires_fresh_context: true

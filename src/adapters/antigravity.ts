@@ -10,6 +10,10 @@ import type { GeneratedFile, PlatformAdapter, ResolvedAgent } from "./types.js";
 export const antigravityAdapter: PlatformAdapter = {
   id: "antigravity",
   displayName: "Antigravity",
+  skillSupport: {
+    verified: false,
+    note: "Antigravity command/skill mechanism not yet mapped — the harness-init-agent confirms it via research.",
+  },
   render({ agent, model, tools }: ResolvedAgent): GeneratedFile {
     const header = [
       `# ${agent.name}`,

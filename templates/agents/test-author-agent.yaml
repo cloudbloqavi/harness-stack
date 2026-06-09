@@ -10,6 +10,8 @@ description: >
 goal: Review unit tests, surface gaps/quality issues, and author missing tests on consent.
 type: on-demand
 triggers: [on_demand, on_check]
+expose_as: [subagent, command]
+command: author-tests
 model_tier: reasoning
 capabilities: [read, write, exec, web_search]
 requires_fresh_context: true

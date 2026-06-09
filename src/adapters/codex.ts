@@ -9,6 +9,10 @@ import type { GeneratedFile, PlatformAdapter, ResolvedAgent } from "./types.js";
 export const codexAdapter: PlatformAdapter = {
   id: "codex",
   displayName: "Codex",
+  skillSupport: {
+    verified: false,
+    note: "Codex command/skill mechanism not yet mapped — the harness-init-agent confirms it via research.",
+  },
   render({ agent, model, tools }: ResolvedAgent): GeneratedFile {
     const definition = {
       name: agent.name,

@@ -46,6 +46,7 @@ harness init                       # asks your platform(s) + optional harness-br
 harness build-agents               # generate platform-native agent files
 harness agent list                 # browse the registered sub-agents
 harness hooks                      # trigger -> native event-hook wiring plan
+harness skills                     # how agents are exposed as skills / slash commands
 harness check --all                # see the resource-aware orchestration plan
 ```
 
@@ -154,11 +155,14 @@ to a local scaffold so `init` always completes.
 .subagents/<agent>.yaml      <- canonical, platform-agnostic source of truth
         |  harness build-agents
         v
-.claude/agents/<agent>.md          <- Claude Code   (derived)
+.claude/agents/<agent>.md          <- Claude Code   (derived sub-agent)
 .antigravity/agents/*.md           <- Antigravity   (derived)
 .codex/agents/*.json               <- Codex         (derived)
 .cursor/agents/*.md                <- Cursor        (derived)
 .github/copilot/agents/*.md        <- Copilot       (derived)
+
+.claude/skills/<command>/SKILL.md  <- decision-routable skill  (when expose_as has "skill")
+.claude/commands/<command>.md      <- manual slash command      (when expose_as has "command")
 ```
 
 - **Edit the YAML, not the generated files.** Generated files are overwritten on
@@ -184,6 +188,32 @@ Because hook APIs drift, the map ships with best-known defaults flagged
 `verified: false`; at `init` the `harness-init-agent` **researches the chosen
 platform's current hook docs** (search + Context7) and refreshes the map before
 wiring. This is why `init` asks which platform you use first.
+
+### Agents as skills & slash commands
+
+A sub-agent is always generated. Beyond that, each agent declares how it can be
+**invoked**, via `expose_as` in its `.subagents/*.yaml`:
+
+| `expose_as` includes | Surface generated (Claude Code) | Invocation |
+| --- | --- | --- |
+| `subagent` (default) | `.claude/agents/<name>.md` | Dispatched by the orchestrator / main agent |
+| `skill` | `.claude/skills/<command>/SKILL.md` | **Decision-based** — the main agent chooses to run it |
+| `command` | `.claude/commands/<command>.md` | **Manual** — you run `/<command>` |
+
+The skill/command files are **thin launchers** that dispatch the same sub-agent,
+so the `.subagents` prompt stays the single source of truth. The slash name is
+`command:` (or the agent name minus `-agent`). Run **`harness skills`** to see
+each agent's surfaces.
+
+Defaults: light routing agents (`skills-router`, `mcp-router`, `commit-brain`)
+are exposed as **both** a skill and a command; heavier fresh-context agents
+(`harness-init`, `dependency-audit`, `spec-author`, `test-author`) get a
+**manual command** only — so the model doesn't auto-launch an expensive job.
+
+Like hooks, the native skill/command mechanism differs per platform. Claude Code
+is wired and verified; other platforms report **pending** until the
+`harness-init-agent` confirms their mechanism via research (sub-agent dispatch
+works in the meantime).
 
 ### Fresh-context enforcement
 

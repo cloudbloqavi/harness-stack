@@ -10,6 +10,10 @@ import type { GeneratedFile, PlatformAdapter, ResolvedAgent } from "./types.js";
 export const copilotAdapter: PlatformAdapter = {
   id: "copilot",
   displayName: "GitHub Copilot",
+  skillSupport: {
+    verified: false,
+    note: "Copilot command/skill mechanism not yet mapped — the harness-init-agent confirms it via research.",
+  },
   render({ agent, model, tools }: ResolvedAgent): GeneratedFile {
     const body = [
       `# ${agent.name}`,

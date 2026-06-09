@@ -85,6 +85,27 @@ a repo may enable several at once (e.g. Claude Code + Cursor), recorded in
 `.harness/config.yaml` — and `build-agents` / `hooks` default to every enabled
 platform so the research and wiring target each environment.
 
+## Invocation surfaces: sub-agent, skill, slash command
+
+A sub-agent file is always generated. Each agent additionally declares how it
+may be invoked via `expose_as` (`src/schema.ts`):
+
+- **`subagent`** (default) — orchestrator / main-agent dispatch.
+- **`skill`** — a decision-routable skill the main agent can choose to run
+  (Claude Code: `.claude/skills/<command>/SKILL.md`).
+- **`command`** — a manual slash command the developer runs directly
+  (Claude Code: `.claude/commands/<command>.md`).
+
+The slash/skill name is `command:` or the agent name minus `-agent`. Generated
+skill/command files are **thin launchers** that dispatch the same sub-agent, so
+the `.subagents` prompt stays the single source of truth. Light routing agents
+default to skill + command; heavier fresh-context agents to a manual command
+only. As with hooks, the native mechanism differs per platform: Claude Code is
+verified (`adapter.skillSupport.verified`), and other platforms report **pending**
+until the `harness-init-agent` confirms their command/skill mechanism via
+research. `harness skills` prints each agent's surfaces
+(`src/commands/skills.ts`, `src/adapters/*`).
+
 ## Fresh-context mandate
 
 1. **Platform-native search** — the adapter wires abstract `web_search` to the
@@ -240,6 +261,7 @@ provenance labelled and currency confirmed via search/Context7.
 | R5 | Fresh-context enforcement (build fails without search + Context7) | `src/resolution/fresh-context.ts` |
 | R6 | Resource-aware spawning | `src/orchestrator/scheduler.ts` |
 | R7 | Adapter generation | `src/adapters/`, `src/commands/build-agents.ts` |
+| R7b | Invocation surfaces: skill + slash command (decision-routed / manual) | `src/schema.ts` (`expose_as`), `src/adapters/`, `src/commands/skills.ts` |
 | R8 | Spec Kit + Superpowers install, consent-gated | `src/foundation/` |
 | R9 | Skill recommendation protocol (y/n/always) | `src/skills/router.ts`, `src/util/consent.ts` |
 | R10 | Skill sourcing precedence | `src/skills/router.ts` |
