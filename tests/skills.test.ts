@@ -77,7 +77,7 @@ describe("claude-code adapter: skill + command artifacts", () => {
   });
 });
 
-describe("platform-specific verified mappings", () => {
+describe("platform-specific verified manual mappings", () => {
   const base = { agent: agent({ command: "demo" }), command: "demo", wantsSkill: true, wantsCommand: true };
 
   it("cursor: .cursor/skills + .cursor/commands", () => {
@@ -94,14 +94,56 @@ describe("platform-specific verified mappings", () => {
     expect(cmdOnly[0]!.contents).toContain("allow_implicit_invocation: false");
   });
 
-  it("antigravity: .agents/skills + .agents/workflows", () => {
-    const paths = antigravityAdapter.renderManual!({ ...base, platform: "antigravity" }).map((f) => f.relPath).sort();
-    expect(paths).toEqual([".agents/skills/demo/SKILL.md", ".agents/workflows/demo.md"]);
+  it("antigravity: sub-agent IS the skill; renderManual emits only the workflow", () => {
+    expect(antigravityAdapter.subagentIsSkill).toBe(true);
+    const paths = antigravityAdapter.renderManual!({ ...base, platform: "antigravity" }).map((f) => f.relPath);
+    expect(paths).toEqual([".agents/workflows/demo.md"]);
   });
 
-  it("copilot: .github/agents + .github/prompts", () => {
-    const paths = copilotAdapter.renderManual!({ ...base, platform: "copilot" }).map((f) => f.relPath).sort();
-    expect(paths).toEqual([".github/agents/demo.md", ".github/prompts/demo.prompt.md"]);
+  it("copilot: custom agent IS the skill; renderManual emits only the prompt file", () => {
+    expect(copilotAdapter.subagentIsSkill).toBe(true);
+    const paths = copilotAdapter.renderManual!({ ...base, platform: "copilot" }).map((f) => f.relPath);
+    expect(paths).toEqual([".github/prompts/demo.prompt.md"]);
+  });
+});
+
+describe("verified sub-agent (render) conventions", () => {
+  const a = agent({ name: "demo-agent" });
+  const model = { effectiveTier: "fast" as const, model: "M-1", warning: undefined };
+  const r = (adapter: any) =>
+    adapter.render({ agent: a, platform: adapter.id, model, tools: ["read_file"], unsupportedCapabilities: [] });
+
+  it("claude-code: .claude/agents/<name>.md", () => {
+    expect(claudeCodeAdapter.agentRelPath("demo-agent")).toBe(".claude/agents/demo-agent.md");
+    expect(r(claudeCodeAdapter).relPath).toBe(".claude/agents/demo-agent.md");
+  });
+
+  it("cursor: .cursor/agents/<name>.md with YAML frontmatter (readonly/is_background)", () => {
+    const f = r(cursorAdapter);
+    expect(f.relPath).toBe(".cursor/agents/demo-agent.md");
+    expect(f.contents.startsWith("---\n")).toBe(true);
+    expect(f.contents).toContain("readonly: true"); // no write capability
+    expect(f.contents).toContain("is_background:");
+  });
+
+  it("codex: .codex/agents/<name>.toml (TOML developer_instructions)", () => {
+    const f = r(codexAdapter);
+    expect(f.relPath).toBe(".codex/agents/demo-agent.toml");
+    expect(f.contents).toContain('name = "demo-agent"');
+    expect(f.contents).toContain("developer_instructions = ");
+    expect(f.contents).toContain('sandbox_mode = "read-only"'); // no write capability
+  });
+
+  it("antigravity: .agents/skills/<name>/SKILL.md with the full prompt", () => {
+    const f = r(antigravityAdapter);
+    expect(f.relPath).toBe(".agents/skills/demo-agent/SKILL.md");
+    expect(f.contents).toContain("You are the demo agent."); // full prompt, not a launcher
+  });
+
+  it("copilot: .github/agents/<name>.agent.md custom agent with the full prompt", () => {
+    const f = r(copilotAdapter);
+    expect(f.relPath).toBe(".github/agents/demo-agent.agent.md");
+    expect(f.contents).toContain("You are the demo agent.");
   });
 });
 

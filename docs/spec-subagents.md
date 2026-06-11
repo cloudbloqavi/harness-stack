@@ -32,6 +32,23 @@ frontmatter in `.claude/agents/`. Harness does **not** replace it — it generat
 it. `.subagents/*.yaml` is the canonical, richer, platform-agnostic source of
 truth; platform agent files are derived artefacts regenerated on every build.
 
+### Per-platform sub-agent file (verified)
+
+The "sub-agent" primitive differs per platform; each adapter emits the verified
+native artifact (`adapter.render` / `adapter.agentRelPath`):
+
+| Platform | Sub-agent file | Format |
+| --- | --- | --- |
+| Claude Code | `.claude/agents/<name>.md` | YAML frontmatter + prompt |
+| Cursor | `.cursor/agents/<name>.md` | frontmatter: name, description, model, readonly, is_background |
+| Codex | `.codex/agents/<name>.toml` | TOML: name, description, developer_instructions, model, sandbox_mode |
+| Antigravity | `.agents/skills/<name>/SKILL.md` | Agent Skill — no separate sub-agent file exists, so the skill **is** the agent |
+| GitHub Copilot | `.github/agents/<name>.agent.md` | custom agent (frontmatter + prompt) — the custom agent **is** the agent |
+
+On Antigravity and Copilot the sub-agent and the decision-routed skill are the
+same primitive (`adapter.subagentIsSkill`), so `render()` emits the full agent
+and `renderManual` adds only the manual command.
+
 ## The `.subagents/` folder
 
 One file per sub-agent, kebab-case, created by `harness init`. `README.md` is an
@@ -104,18 +121,21 @@ to skill + command; heavier fresh-context agents to a manual command only.
 Each platform maps to its **native, verified** mechanism (`adapter.renderManual`,
 `adapter.skillSupport.verified === true` for all five):
 
-| Platform | skill | command |
+| Platform | skill (decision-routed) | command (manual) |
 | --- | --- | --- |
 | Claude Code | `.claude/skills/<c>/SKILL.md` | `.claude/commands/<c>.md` |
 | Cursor | `.cursor/skills/<c>/SKILL.md` | `.cursor/commands/<c>.md` |
 | Codex | `.agents/skills/<c>/SKILL.md` (implicit) | same skill, explicit `$<c>` |
-| Antigravity | `.agents/skills/<c>/SKILL.md` | `.agents/workflows/<c>.md` |
-| GitHub Copilot | `.github/agents/<c>.md` | `.github/prompts/<c>.prompt.md` |
+| Antigravity | *the sub-agent* `.agents/skills/<name>/SKILL.md` | `.agents/workflows/<c>.md` |
+| GitHub Copilot | *the sub-agent* `.github/agents/<name>.agent.md` | `.github/prompts/<c>.prompt.md` |
 
-Cursor, Codex, and Antigravity share the portable **Agent Skills** standard
-(`SKILL.md`). As with hooks, mechanisms drift, so the `harness-init-agent`
-re-checks them at init via search + Context7. `harness skills` prints each
-agent's surfaces (`src/commands/skills.ts`, `src/adapters/*`).
+For Claude/Cursor/Codex the skill is a separate thin launcher pointing at
+`.subagents/<name>.yaml`. For Antigravity/Copilot the sub-agent file is already
+the decision-routed skill (`subagentIsSkill`), so only the manual command is
+added. Cursor, Codex, and Antigravity share the portable **Agent Skills**
+standard (`SKILL.md`). As with hooks, mechanisms drift, so the
+`harness-init-agent` re-checks them at init via search + Context7.
+`harness skills` prints each agent's surfaces.
 
 ## Fresh-context mandate
 

@@ -14,9 +14,12 @@ import type {
 } from "./types.js";
 import { launcherBody, withFrontmatter } from "./manual.js";
 
+const agentRelPath = (name: string) => `.claude/agents/${name}.md`;
+
 export const claudeCodeAdapter: PlatformAdapter = {
   id: "claude-code",
   displayName: "Claude Code",
+  agentRelPath,
   // Verified: Agent Skills (.claude/skills/<name>/SKILL.md) + custom slash
   // commands (.claude/commands/<name>.md). https://docs.claude.com/en/docs/claude-code
   skillSupport: {
@@ -43,7 +46,7 @@ export const claudeCodeAdapter: PlatformAdapter = {
     ].join("\n");
 
     return {
-      relPath: `.claude/agents/${agent.name}.md`,
+      relPath: agentRelPath(agent.name),
       contents: `---\n${fm}\n---\n\n${body}\n`,
     };
   },

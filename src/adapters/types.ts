@@ -36,6 +36,14 @@ export interface PlatformAdapter {
   readonly displayName: string;
   /** Render one resolved agent into its platform-native sub-agent file. */
   render(resolved: ResolvedAgent): GeneratedFile;
+  /** Path (relative to root) of this agent's canonical sub-agent file. */
+  agentRelPath(name: string): string;
+  /**
+   * True when the platform's sub-agent IS its decision-routed skill primitive
+   * (e.g. Antigravity Agent Skills, Copilot custom agents). For these, render()
+   * emits the full agent and renderManual must NOT also emit a thin skill.
+   */
+  readonly subagentIsSkill?: boolean;
   /**
    * Whether the skill/command mechanism is confirmed against the platform's
    * current docs. The bundled mappings are verified; the harness-init-agent
@@ -45,7 +53,8 @@ export interface PlatformAdapter {
   /**
    * Render the requested manual surfaces (skill and/or command) as the
    * platform's native files. Returns zero or more files — some platforms
-   * satisfy both surfaces with a single native artifact.
+   * satisfy both surfaces with a single native artifact, and platforms where
+   * the sub-agent is the skill emit only the command here.
    */
   renderManual?(ctx: ManualContext): GeneratedFile[];
 }

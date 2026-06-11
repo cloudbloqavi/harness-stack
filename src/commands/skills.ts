@@ -43,14 +43,24 @@ export async function runSkills(opts: SkillsOptions): Promise<void> {
       pending++;
       continue;
     }
-    const files = adapter.renderManual({
-      agent,
-      platform: opts.platform,
-      command: commandName(agent),
-      wantsSkill,
-      wantsCommand,
-    });
-    log.detail(`  ${agent.name}  ->  ${files.map((f) => f.relPath).join(", ")}`);
+    const surfaces: string[] = [];
+    // On platforms where the sub-agent IS the skill, the agent file is the
+    // decision-routed surface; otherwise it comes from renderManual.
+    if (wantsSkill && adapter.subagentIsSkill) {
+      surfaces.push(`${adapter.agentRelPath(agent.name)} (agent=skill)`);
+    }
+    surfaces.push(
+      ...adapter
+        .renderManual({
+          agent,
+          platform: opts.platform,
+          command: commandName(agent),
+          wantsSkill,
+          wantsCommand,
+        })
+        .map((f) => f.relPath),
+    );
+    log.detail(`  ${agent.name}  ->  ${surfaces.join(", ")}`);
   }
 
   if (pending > 0) {

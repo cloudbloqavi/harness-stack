@@ -111,11 +111,12 @@ to a local scaffold so `init` always completes.
                                   |
        +----------+----------+----+-----+----------+-----------+
        v          v          v          v          v
-  +---------+ +----------+ +-------+ +--------+ +---------+
-  | Claude  | |Antigravity| | Codex | | Cursor | | Copilot |
-  | Code    | | .anti...  | |.codex/| |.cursor/| |.github/ |
-  |.claude/ | | agents/   | |agents/| |agents/ | |copilot/ |
-  +---------+ +----------+ +-------+ +--------+ +---------+
+  +---------+ +-----------+ +---------+ +---------+ +-------------+
+  | Claude  | |Antigravity| | Codex   | | Cursor  | | Copilot     |
+  |.claude/ | |.agents/   | |.codex/  | |.cursor/ | |.github/     |
+  | agents/ | | skills/   | | agents/ | | agents/ | | agents/     |
+  | *.md    | | SKILL.md  | | *.toml  | | *.md    | | *.agent.md  |
+  +---------+ +-----------+ +---------+ +---------+ +-------------+
        \_______ trigger -> native hook (or git-hook / harness fallback) ______/
 
    Orchestrator (harness check) reads the same specs and computes a
@@ -155,15 +156,16 @@ to a local scaffold so `init` always completes.
 .subagents/<agent>.yaml      <- canonical, platform-agnostic source of truth
         |  harness build-agents
         v
-.claude/agents/<agent>.md          <- Claude Code   (derived sub-agent)
-.antigravity/agents/*.md           <- Antigravity   (derived)
-.codex/agents/*.json               <- Codex         (derived)
-.cursor/agents/*.md                <- Cursor        (derived)
-.github/copilot/agents/*.md        <- Copilot       (derived)
+.claude/agents/<name>.md           <- Claude Code  (sub-agent, YAML frontmatter)
+.cursor/agents/<name>.md           <- Cursor       (sub-agent, YAML frontmatter)
+.codex/agents/<name>.toml          <- Codex        (custom agent, TOML)
+.agents/skills/<name>/SKILL.md     <- Antigravity  (Agent Skill — the sub-agent)
+.github/agents/<name>.agent.md     <- Copilot      (custom agent — the sub-agent)
 
 .claude/skills/<command>/SKILL.md  <- decision-routed skill  (when expose_as has "skill")
 .claude/commands/<command>.md      <- manual slash command    (when expose_as has "command")
-   (per-platform native paths for skill/command — see the table below)
+   (per-platform native paths for skill/command — see the table below;
+    on Antigravity & Copilot the sub-agent above IS the decision-routed skill)
 ```
 
 - **Edit the YAML, not the generated files.** Generated files are overwritten on
@@ -209,11 +211,14 @@ mechanism:
 | Claude Code | `.claude/skills/<c>/SKILL.md` | `.claude/commands/<c>.md` → `/<c>` |
 | Cursor (2.4) | `.cursor/skills/<c>/SKILL.md` | `.cursor/commands/<c>.md` → `/<c>` |
 | Codex | `.agents/skills/<c>/SKILL.md` (implicit) | same skill, explicit `$<c>` (`allow_implicit_invocation: false`) |
-| Antigravity | `.agents/skills/<c>/SKILL.md` | `.agents/workflows/<c>.md` → `/<c>` |
-| GitHub Copilot | `.github/agents/<c>.md` | `.github/prompts/<c>.prompt.md` → `/<c>` |
+| Antigravity | *the sub-agent* `.agents/skills/<name>/SKILL.md` | `.agents/workflows/<c>.md` → `/<c>` |
+| GitHub Copilot | *the sub-agent* `.github/agents/<name>.agent.md` | `.github/prompts/<c>.prompt.md` → `/<c>` |
 
-Cursor, Codex, and Antigravity all read the portable **Agent Skills** standard
-(`SKILL.md`). Defaults: light routing agents (`skills-router`, `mcp-router`,
+On **Antigravity and Copilot the sub-agent file is already the decision-routed
+skill**, so no separate thin skill is emitted — only the manual command. On
+Claude/Cursor/Codex the skill is a separate thin launcher. Cursor, Codex, and
+Antigravity all read the portable **Agent Skills** standard (`SKILL.md`).
+Defaults: light routing agents (`skills-router`, `mcp-router`,
 `commit-brain`) are exposed as **both** a skill and a command; heavier
 fresh-context agents (`harness-init`, `dependency-audit`, `spec-author`,
 `test-author`) get a **manual command** only — so the model doesn't auto-launch
