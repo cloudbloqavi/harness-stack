@@ -260,6 +260,8 @@ high-priority first, non-parallelizable agents sequenced.
 | `commit-brain-agent` | fast | Write per-commit summaries into `harness-brain` |
 | `dependency-audit-agent` | reasoning | Maintain `DEPENDENCIES.md` (latest / outdated / deprecated / EOL) from live data |
 | `test-author-agent` | reasoning | Review unit tests, surface gaps, author missing tests on consent |
+| `drift-reviewer-agent` | reasoning | Pre-commit semantic check: flag/fix docstring, doc & low-level-design drift vs the diff (docs only) |
+| `verifier-agent` | reasoning | Pre-commit executable check: independently confirm the change is covered by passing tests (no `write`; delegates authoring to `test-author-agent`, owns the verdict) |
 
 See [`docs/spec-subagents.md`](docs/spec-subagents.md) for the full design spec
 and the Phase 2/3 catalog.

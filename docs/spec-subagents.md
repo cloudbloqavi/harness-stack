@@ -266,6 +266,16 @@ provenance labelled and currency confirmed via search/Context7.
 | `commit-brain-agent` | fast | on_commit | Write per-commit summaries into `harness-brain` |
 | `dependency-audit-agent` | reasoning | on_init, on_demand | Maintain `DEPENDENCIES.md`: latest/outdated/deprecated/EOL per package, from live data |
 | `test-author-agent` | reasoning | on_demand, on_check | Review unit tests, surface coverage/quality gaps, author missing tests on consent |
+| `drift-reviewer-agent` | reasoning | on_check, on_demand | Semantic pre-commit check: flag/fix docstring, doc, and low-level-design drift vs the diff (docs only) |
+| `verifier-agent` | reasoning | on_check, on_demand | Executable pre-commit check: independently confirm the change is covered by passing tests; delegates authoring to `test-author-agent`, owns the verdict |
+
+> **Verification pair.** `drift-reviewer-agent` (semantic) and `verifier-agent`
+> (executable) fan out in parallel on `on_check` as a pre-commit guardrail. The
+> verifier has **no `write` capability** by design — it cannot author the tests
+> it judges, so the code's author never grades their own work; it delegates
+> missing-test authoring to `test-author-agent` and owns the PASS/FAIL/BLOCKED
+> verdict. Both route their findings to `commit-brain-agent` for the
+> harness-brain audit trail (the antidote to "quiet success").
 
 ### Phase 2 (P1, should-have)
 
