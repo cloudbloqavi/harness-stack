@@ -19,6 +19,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "prepack": "npm run build",
+    "prepare": "npm run build",
     "dev": "tsx src/cli.ts",
     "harness": "tsx src/cli.ts",
     "test": "vitest run",

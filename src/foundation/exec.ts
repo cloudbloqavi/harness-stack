@@ -19,8 +19,12 @@ export function run(
     });
     let stdout = "";
     let stderr = "";
+    let timedOut = false;
     const timer = opts.timeoutMs
-      ? setTimeout(() => child.kill("SIGKILL"), opts.timeoutMs)
+      ? setTimeout(() => {
+          timedOut = true;
+          child.kill("SIGKILL");
+        }, opts.timeoutMs)
       : undefined;
     child.stdout?.on("data", (d) => (stdout += d.toString()));
     child.stderr?.on("data", (d) => (stderr += d.toString()));
@@ -28,9 +32,19 @@ export function run(
       if (timer) clearTimeout(timer);
       resolve({ code: 127, stdout, stderr: stderr + String(err) });
     });
-    child.on("close", (code) => {
+    child.on("close", (code, signal) => {
       if (timer) clearTimeout(timer);
-      resolve({ code: code ?? 0, stdout, stderr });
+      // A process killed by a signal reports code === null. Never coerce that to
+      // success (0) — a timed-out or killed installer must surface as failure so
+      // `harness init` doesn't report a half-configured project as done.
+      if (code === null) {
+        const note = timedOut
+          ? `\n[harness] command timed out after ${opts.timeoutMs}ms and was killed (${signal})`
+          : `\n[harness] command killed by signal ${signal}`;
+        resolve({ code: timedOut ? 124 : 137, stdout, stderr: stderr + note });
+        return;
+      }
+      resolve({ code, stdout, stderr });
     });
   });
 }
