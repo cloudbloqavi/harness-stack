@@ -24,19 +24,11 @@ repos, without you re-explaining context every time.
 
 ```mermaid
 flowchart LR
-    subgraph REPOS["Your repos"]
-      R1["repo A"]
-      R2["repo B (related to A)"]
-      R3["repo C (unrelated)"]
-    end
-    R1 -- "on commit" --> BRAIN
-    R2 -- "on commit" --> BRAIN
-    R3 -- "on commit" --> BRAIN
-    subgraph BRAIN["harness-brain (this repo)"]
-      B1["brain-1/ — A + B<br/>(related, read together)"]
-      B2["brain-2/ — C<br/>(unrelated, own brain)"]
-    end
-    BRAIN -- "new session start" --> DIGEST["recent-change digest,<br/>fed back to the agent"]
+    R1["repo A"] -->|"on commit"| B1["brain-1/<br/>(A + B, related)"]
+    R2["repo B<br/>(related to A)"] -->|"on commit"| B1
+    R3["repo C<br/>(unrelated)"] -->|"on commit"| B2["brain-2/<br/>(C, own brain)"]
+    B1 --> DIGEST["recent-change digest,<br/>fed back to the agent"]
+    B2 --> DIGEST
     style B1 fill:#1f6feb22,stroke:#1f6feb
     style B2 fill:#2ea04322,stroke:#2ea043
 ```
