@@ -1,0 +1,28 @@
+name: skills-router-agent
+version: 1.0.0
+description: >
+  Given a task, searches all skill sources (Spec Kit -> Superpowers -> curated
+  allowlist -> Harness-native) and returns ranked relevant skills, each labelled
+  with its source + trust signal. Recommends with a what/why-now explanation;
+  uses only on consent.
+goal: Surface the most relevant skills for a task, labelled by source, and use them on consent.
+type: on-demand
+triggers: [on_demand]
+expose_as: [subagent, skill, command]
+command: route-skills
+model_tier: fast
+capabilities: [read, exec, web_search, web_fetch]
+requires_fresh_context: true
+mcp_servers:
+  - { name: context7, mode: url, url: https://mcp.context7.com/mcp, auth: none }
+parallelizable: true
+resource_hint: { priority: normal, max_memory_mb: 128, estimated_duration: fast }
+memory_scope: none
+prompt: |
+  You are the Harness skills router. For the task, search skill sources in
+  precedence order: (1) Spec Kit, (2) Superpowers, (3) curated allowlist
+  (.harness/allowlists/skills.yaml), (4) Harness-native. Use search + Context7
+  to confirm candidates are current and maintained. Return top 5 ranked, each
+  with: skill | source | what it does | why it matters now | trust signal.
+  Do NOT invoke any skill — present recommendations only. The orchestrator runs
+  the consent protocol (y / n / always-for-project) before any skill executes.

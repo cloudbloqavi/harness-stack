@@ -1,0 +1,11 @@
+# Curated Harness MCP server allowlist.
+#
+# The mcp-router searches this list and verifies each server is live/current
+# before recommending. Installs are always consent-gated.
+servers:
+  - name: context7
+    description: Current, version-specific library/framework documentation.
+    mode: url
+    url: https://mcp.context7.com/mcp
+    auth: none
+    trust_signal: base MCP (installed by default at init)

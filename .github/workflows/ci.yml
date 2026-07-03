@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    name: typecheck · test · build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  audit:
+    name: dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+      - run: npm ci
+      - name: Audit (fail on high+)
+        run: npm audit --audit-level=high
+
+  brain-template-drift:
+    name: brain template parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone harness-brain (best effort)
+        continue-on-error: true
+        env:
+          # Compare against the matching branch (the brain's changes live on the
+          # same feature branch pre-merge); fall back to the default branch.
+          BRAIN_BRANCH: ${{ github.head_ref || github.ref_name }}
+          BRAIN_URL: https://github.com/cloudbloqavi/harness-brain.git
+        run: |
+          git clone --depth 1 --branch "$BRAIN_BRANCH" "$BRAIN_URL" "$RUNNER_TEMP/harness-brain" \
+            || git clone --depth 1 "$BRAIN_URL" "$RUNNER_TEMP/harness-brain"
+
+      - name: Verify templates/brain matches harness-brain
+        run: |
+          set -e
+          if [ ! -d "$RUNNER_TEMP/harness-brain" ]; then
+            echo "::notice::harness-brain not reachable from CI — skipping drift check. Run \`npm run verify:brain-template\` locally against a sibling checkout."
+            exit 0
+          fi
+          node scripts/check-brain-template.mjs "$RUNNER_TEMP/harness-brain"

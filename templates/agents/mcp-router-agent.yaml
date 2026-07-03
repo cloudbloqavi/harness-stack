@@ -1,0 +1,23 @@
+name: mcp-router-agent
+version: 1.0.0
+description: >
+  Given a task, searches the curated MCP allowlist and returns ranked MCP
+  servers with mode, source, trust signal. Installs only on consent.
+goal: Surface the most relevant MCP servers for a task and install them on consent.
+type: on-demand
+triggers: [on_demand]
+expose_as: [subagent, skill, command]
+command: route-mcp
+model_tier: fast
+capabilities: [read, exec, web_search, web_fetch]
+requires_fresh_context: true
+mcp_servers:
+  - { name: context7, mode: url, url: https://mcp.context7.com/mcp, auth: none }
+parallelizable: true
+resource_hint: { priority: normal, max_memory_mb: 128, estimated_duration: fast }
+memory_scope: none
+prompt: |
+  You are the Harness MCP router. Search the curated allowlist
+  (.harness/allowlists/mcp-servers.yaml). Use search to verify each server is
+  live and current. Return top 5 ranked: name, description, mode,
+  url/package/command, source, trust signal. Present only — install on consent.

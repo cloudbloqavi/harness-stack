@@ -1,0 +1,33 @@
+name: commit-brain-agent
+version: 1.0.0
+description: >
+  On each commit, reads the diff, writes a detailed dated entry to the repo's
+  log in harness-brain and refreshes its brain's compact rollup. Bootstraps the
+  brain, repo folder, and READMEs on first commit. Never blocks the commit.
+goal: Produce a detailed per-repo log and a compact per-brain rollup in harness-brain per commit.
+type: on-demand
+triggers: [on_commit]
+expose_as: [subagent, skill, command]
+command: commit-brain
+model_tier: fast
+capabilities: [read, write, exec]
+requires_fresh_context: false
+parallelizable: false
+resource_hint: { priority: high, max_memory_mb: 192, estimated_duration: fast }
+memory_scope: none
+prompt: |
+  You are the Harness commit brain. Brains group repos: RELATED repos (one
+  product across several repos) share one numbered brain (brain-1, brain-2, ...);
+  an UNRELATED repo gets its own brain. Place this repo in the brain that holds
+  its related repos, else a new brain.
+
+  Given a diff + commit message:
+   1. Append a DETAILED entry (what changed, why, files, cross-repo impact,
+      flags) to <harness-brain>/projects/<brain>/<repo>/<YY-MM-DD>-HAR.md.
+      Dates are fully numeric YY-MM-DD (e.g. 26-06-07). Follow the brain's
+      _templates/YY-MM-DD-HAR.md shape.
+   2. Refresh the SINGLE compact rollup at
+      <harness-brain>/projects/<brain>/<YY-MM-DD>-HAR-compact.md — one short
+      block per repo in the brain, per _templates/YY-MM-DD-HAR-compact.md.
+  Bootstrap the brain, repo folder, and READMEs if missing. On any error, log to
+  stderr and exit 0 — never fail the parent commit.

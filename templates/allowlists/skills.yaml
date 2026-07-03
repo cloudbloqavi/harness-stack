@@ -1,0 +1,14 @@
+# Curated Harness skill allowlist (precedence tier 3).
+#
+# The skills-router searches Spec Kit -> Superpowers -> this allowlist ->
+# Harness-native, in that order. Add vetted third-party skills here with a
+# trust signal so recommendations stay grounded.
+skills:
+  - name: requesting-code-review
+    source: Superpowers
+    what: Two-stage review — spec-compliance then code-quality.
+    trust_signal: vetted (Superpowers, MIT)
+  - name: test-driven-development
+    source: Superpowers
+    what: Enforces RED-GREEN-REFACTOR; failing test before any implementation.
+    trust_signal: vetted (Superpowers, MIT)
