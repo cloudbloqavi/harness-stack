@@ -21,17 +21,10 @@ Code, Cursor, Codex, Antigravity, or GitHub Copilot).
 
 ```mermaid
 flowchart LR
-    subgraph BEFORE["Your repo — before"]
-      Y1["src/, tests/, README.md ..."]
-    end
-    BEFORE -->|"harness init<br/>+ harness build-agents"| AFTER
-    subgraph AFTER["Your repo — after"]
-      Y2["src/, tests/, README.md ..."]
-      Y3[".subagents/*.yaml<br/>(plain-English agent specs)"]
-      Y4[".claude/ or .cursor/ or ...<br/>(auto-generated for YOUR tool)"]
-    end
-    style Y3 fill:#1f6feb22,stroke:#1f6feb
-    style Y4 fill:#2ea04322,stroke:#2ea043
+    A["Your repo<br/>src/, tests/, README.md ..."] -->|"harness init<br/>+ harness build-agents"| B[".subagents/*.yaml<br/>(plain-English agent specs)"]
+    B --> C[".claude/ or .cursor/ or ...<br/>(auto-generated for YOUR tool)"]
+    style B fill:#1f6feb22,stroke:#1f6feb
+    style C fill:#2ea04322,stroke:#2ea043
 ```
 
 Nothing here trains a model or calls a hosted service on your behalf — it
