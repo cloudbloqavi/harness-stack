@@ -115,8 +115,10 @@ may be invoked via `expose_as` (`src/schema.ts`):
 
 The slash/skill name is `command:` or the agent name minus `-agent`. Generated
 skill/command files are **thin launchers** that point at `.subagents/<name>.yaml`
-(the canonical spec) as the single source of truth. Light routing agents default
-to skill + command; heavier fresh-context agents to a manual command only.
+(the canonical spec) as the single source of truth. Light routing agents and the
+pre-commit verification pair (`drift-reviewer`, `verifier`) default to skill +
+command — the pair must be decision-routable on `on_check`; heavier fresh-context
+agents default to a manual command only.
 
 Each platform maps to its **native, verified** mechanism (`adapter.renderManual`,
 `adapter.skillSupport.verified === true` for all five):
@@ -276,6 +278,33 @@ provenance labelled and currency confirmed via search/Context7.
 > missing-test authoring to `test-author-agent` and owns the PASS/FAIL/BLOCKED
 > verdict. Both route their findings to `commit-brain-agent` for the
 > harness-brain audit trail (the antidote to "quiet success").
+
+```
+                        on_check  (harness check — pre-commit gate)
+                                        │
+                    ┌───────────────────┴───────────────────┐
+                    ▼ (parallel)                             ▼
+        ┌───────────────────────┐              ┌───────────────────────────┐
+        │  drift-reviewer-agent │              │      verifier-agent       │
+        │  SEMANTIC             │              │      EXECUTABLE           │
+        │  doc / docstring /    │              │  change covered by        │
+        │  low-level-design     │              │  passing tests?           │
+        │  drift  (docs only)   │              │  capabilities: read, exec │
+        └───────────┬───────────┘              │  (NO write — can't author │
+                    │                          │   the tests it judges)    │
+                    │                          └─────┬───────────────┬─────┘
+                    │                                │ gap?          │ run
+                    │                                ▼               ▼
+                    │                    ┌───────────────────┐   PASS / FAIL /
+                    │                    │ test-author-agent │   BLOCKED (owns
+                    │                    │  authors tests    │   the verdict)
+                    │                    │  (consent-gated)  │
+                    │                    └───────────────────┘
+                    └───────────────┬────────────────┘
+                                    ▼
+                        commit-brain-agent → harness-brain
+                        (audit trail — closes the "quiet success" gap)
+```
 
 ### Phase 2 (P1, should-have)
 

@@ -108,9 +108,11 @@ async function resolveNorthStar(root: string): Promise<{ text: string; source: s
   };
 }
 
-/** For README/constitution, keep the first section so the seed stays tight. */
+/** For a long README, keep the first section so the seed stays tight. Files
+ * authored to BE the north-star (SEED.md, a Spec Kit constitution) are kept
+ * whole — truncating them would drop the very substance fed each iteration. */
 function firstSection(text: string, rel: string): string {
-  if (rel === ".harness/SEED.md") return text; // authored to be the seed verbatim
+  if (rel === ".harness/SEED.md" || rel.endsWith("constitution.md")) return text;
   const lines = text.split("\n");
   const out: string[] = [];
   let seenHeading = false;
@@ -142,11 +144,13 @@ export async function findBrainCompact(
       const brainDir = path.join(projects, b.name);
       const repoDir = path.join(brainDir, repoName);
       if (!(await pathExists(repoDir))) continue;
-      // Found the repo's brain — read the newest compact rollup at its root.
+      // Found a brain holding the repo — read the newest compact rollup at its
+      // root. If this brain has no rollup yet, keep scanning: a repo normally
+      // lives in exactly one brain, but don't give up on a half-populated one.
       const files = (await fs.readdir(brainDir))
         .filter((f) => /-HAR-compact\.md$/.test(f))
         .sort();
-      if (!files.length) return null;
+      if (!files.length) continue;
       const newest = files[files.length - 1]!;
       const text = (await fs.readFile(path.join(brainDir, newest), "utf8")).trim();
       return { text, source: `${b.name}/${newest}` };
@@ -166,8 +170,9 @@ const NO_STATE =
 const GUARDRAILS = [
   "STOP/CONTINUE via the verification pair, not self-assessment: an iteration " +
     "is only 'done' when the verifier-agent returns PASS (tests green + change " +
-    "covered) and the drift-reviewer-agent reports no unresolved drift. Run " +
-    "them with `harness check` or /verify + /review-drift.",
+    "covered) and the drift-reviewer-agent reports no unresolved drift. Plan " +
+    "them with `harness check`; the host agent loop runs them (/verify + " +
+    "/review-drift).",
   "HARD LIMITS are mandatory: cap max iterations and a token/time budget, and " +
     "stop on no-progress (same verdict N turns running). No stopping condition " +
     "means runaway cost — never omit it.",

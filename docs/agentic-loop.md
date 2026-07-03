@@ -40,9 +40,10 @@ Harness is the *disciplined* end of the loop spectrum, not the AutoGPT end:
   the agent succeeding in ways you don't understand. `harness-brain`'s detailed
   logs + compact rollups are the antidote: every change is auditable after the
   fact.
-- **Independence is structural, not advisory.** The `verifier-agent` has **no
-  `write` capability** — it physically cannot author the tests it judges, so the
-  code's author never grades their own work.
+- **Independence is structural, not advisory.** The `verifier-agent` is
+  resolved with **no file-editing (`write`) capability** — it gets no Write/Edit
+  tools, so it delegates test authoring to `test-author-agent` rather than
+  grading work it wrote itself.
 
 ## The iteration contract
 
@@ -67,15 +68,43 @@ The seed has two planes plus two woven-in guardrails:
 4. **Fresh context** — re-verify library/API/version/CVE facts via
    web_search + Context7 each turn, never from stale memory.
 
+First, how the seed itself is assembled — the sources on the left collapse into
+the four planes fed each iteration:
+
+```mermaid
+flowchart LR
+    subgraph SRC["Sources"]
+      A1[".harness/SEED.md"]
+      A2["specs/&lt;n&gt;/spec.md"]
+      A3["README.md intro"]
+      B1["brain compact rollup"]
+      C1["verifier + drift-reviewer<br/>· hard limits"]
+      D1["web_search + Context7"]
+    end
+    A1 -->|first available| N["North star<br/>(invariant)"]
+    A2 -->|first available| N
+    A3 -->|first available| N
+    B1 --> ST["Current state<br/>(mutable)"]
+    C1 --> G["Guardrails"]
+    D1 --> F["Fresh context"]
+    N --> SEED["Iteration seed<br/>(harness seed)"]
+    ST --> SEED
+    G --> SEED
+    F --> SEED
+    style SEED fill:#1f6feb22,stroke:#1f6feb
+```
+
+Then the loop consumes that seed, resetting context every turn:
+
 ```mermaid
 flowchart TD
-    S["Seed (harness seed)\nnorth-star + brain state"] --> R[Context RESET]
-    R --> A["Agent acts\n(one focused step)"]
-    A --> V{"Verify\nverifier-agent + drift-reviewer-agent\n(independent)"}
+    S["Seed (harness seed)<br/>north-star + brain state"] --> R[Context RESET]
+    R --> A["Agent acts<br/>(one focused step)"]
+    A --> V{"Verify<br/>verifier-agent + drift-reviewer-agent<br/>(independent)"}
     V -->|PASS + no drift| DONE([Stop: goal met])
-    V -->|fail / drift| L{"Stop condition?\nmax iters · budget · no-progress"}
+    V -->|fail / drift| L{"Stop condition?<br/>max iters · budget · no-progress"}
     L -->|hit| HALT([Stop: hard limit])
-    L -->|not yet| W["Write outcome to harness-brain\n(detailed log + compact rollup)"]
+    L -->|not yet| W["Write outcome to harness-brain<br/>(detailed log + compact rollup)"]
     W --> R
     style S fill:#1f6feb22,stroke:#1f6feb
     style V fill:#8957e522,stroke:#8957e5
@@ -119,14 +148,16 @@ harness seed
 # Point it at a specific brain folder / repo name
 HARNESS_BRAIN_PATH=/path/to/harness-brain harness seed --repo ledger-api
 
-# Run the verification gate (the stop/continue signal) for on_check agents
+# Plan the verification gate (the stop/continue signal) for on_check agents
 harness check
-#   → drift-reviewer-agent (semantic) + verifier-agent (executable), in parallel
+#   → schedules drift-reviewer-agent (semantic) + verifier-agent (executable)
+#     to run in parallel; the host agent loop executes them
 ```
 
 In the default flow you drive the loop: run `harness seed` to get the context to
-feed, do a step, run `harness check` (or `/verify` + `/review-drift`) to decide
-continue-vs-stop, and let `commit-brain-agent` record the outcome.
+feed, do a step, run `harness check` to schedule the gate (the host loop runs
+`/verify` + `/review-drift`) to decide continue-vs-stop, and let
+`commit-brain-agent` record the outcome.
 
 ## Future work: the opt-in loop controller
 

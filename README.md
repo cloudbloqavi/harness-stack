@@ -125,7 +125,7 @@ to a local scaffold so `init` always completes.
 
    Agent artifacts:
      commit-brain-agent        --writes--> harness-brain   (per-commit memory)
-     cross-repo-discovery-agent --reads--> harness-brain   (session digest)
+     cross-repo-discovery-agent --reads--> harness-brain   (session digest) [Phase 2]
      dependency-audit-agent    --writes--> DEPENDENCIES.md (latest/EOL/deprecated)
      test-author-agent         --writes--> test files      (consent-gated)
 ```
@@ -144,12 +144,18 @@ to a local scaffold so `init` always completes.
      dependency-audit-agent|   re-audit dependencies on request
      test-author-agent     |   review tests; author missing ones (on consent)
                            |
-   on_check ──────────────┤   harness check [--all]
+   on_check ──────────────┤   harness check [--all]  — pre-commit gate (parallel)
+     drift-reviewer-agent  |   semantic: docstring / doc / low-level-design drift
+     verifier-agent        |   executable: change covered by passing tests (no write)
      test-author-agent     |   coverage/quality review
                            |
    on_commit ─────────────┘   git commit hook
      commit-brain-agent    |   summarise the diff into harness-brain
 ```
+
+> `drift-reviewer-agent` and `verifier-agent` also declare `on_demand`, so you
+> can invoke the verification pair directly (`/review-drift`, `/verify`) as well
+> as via the `on_check` gate.
 
 ## How it works
 
@@ -220,10 +226,11 @@ skill**, so no separate thin skill is emitted — only the manual command. On
 Claude/Cursor/Codex the skill is a separate thin launcher. Cursor, Codex, and
 Antigravity all read the portable **Agent Skills** standard (`SKILL.md`).
 Defaults: light routing agents (`skills-router`, `mcp-router`,
-`commit-brain`) are exposed as **both** a skill and a command; heavier
-fresh-context agents (`harness-init`, `dependency-audit`, `spec-author`,
-`test-author`) get a **manual command** only — so the model doesn't auto-launch
-an expensive job.
+`commit-brain`) and the pre-commit verification pair (`drift-reviewer`,
+`verifier`) are exposed as **both** a skill and a command — the pair need to be
+decision-routable on `on_check`; heavier fresh-context agents (`harness-init`,
+`dependency-audit`, `spec-author`, `test-author`) get a **manual command** only
+— so the model doesn't auto-launch an expensive job.
 
 As with hooks, mechanisms drift, so the bundled mappings are verified now and the
 `harness-init-agent` **re-checks them at init** (search + Context7).
