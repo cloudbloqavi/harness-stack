@@ -9,6 +9,40 @@ gets a working, auditable, fresh-context-grounded agent harness in their repo.
 
 ---
 
+## New here? Start with this
+
+**You do not need any AI/ML background to use this.** Harness is a small
+command-line tool (`harness`) you run once inside *your own* code repository —
+a full-stack app, a backend service, a mobile app, anything. It looks at your
+project and generates a set of ready-to-use **sub-agents** (small, focused AI
+helpers — "review my docs for drift", "write missing tests", "log this commit
+to memory") wired up for whichever AI coding tool you already use (Claude
+Code, Cursor, Codex, Antigravity, or GitHub Copilot).
+
+```mermaid
+flowchart LR
+    subgraph BEFORE["Your repo — before"]
+      Y1["src/, tests/, README.md ..."]
+    end
+    BEFORE -->|"harness init<br/>+ harness build-agents"| AFTER
+    subgraph AFTER["Your repo — after"]
+      Y2["src/, tests/, README.md ..."]
+      Y3[".subagents/*.yaml<br/>(plain-English agent specs)"]
+      Y4[".claude/ or .cursor/ or ...<br/>(auto-generated for YOUR tool)"]
+    end
+    style Y3 fill:#1f6feb22,stroke:#1f6feb
+    style Y4 fill:#2ea04322,stroke:#2ea043
+```
+
+Nothing here trains a model or calls a hosted service on your behalf — it
+generates plain text files (YAML/Markdown/TOML) that your existing AI coding
+tool reads. You can open every generated file, read it in five minutes, and
+delete it if you don't like it.
+
+**Jump to:** [Use Harness in another repo](#use-harness-in-another-repo) ·
+[Why Harness?](#why) · [How it works (deep dive)](#deep-dive-how-it-works) ·
+[Contributing](#contributing)
+
 ## Why
 
 Sub-agents are the execution engine behind every automated check, routing
@@ -26,57 +60,217 @@ makes them:
   recommendation protocol.
 - **Auditable.** Every sub-agent is a diffable `.yaml` in `.subagents/`.
 
-## Install
+<a id="use-harness-in-another-repo"></a>
+
+## 🚀 Use Harness in another repo
+
+This is the main walkthrough — follow it top to bottom in **your own**
+project (a full-stack app, a backend service, a mobile app, a library,
+anything). It assumes no prior experience with Harness or with AI agents.
+
+### Step 0 — Check prerequisites
+
+You need **Node.js 20 or newer** and **git**. Check what you have:
 
 ```bash
-npm install        # in this repo
-npm run build      # produces dist/ + the `harness` bin
+node -v     # must print v20.x.x or higher
+git --version
 ```
 
-Or run from source without building:
+Don't have Node 20+? Install it from [nodejs.org](https://nodejs.org) or with
+a version manager like [nvm](https://github.com/nvm-sh/nvm)
+(`nvm install 20 && nvm use 20`).
+
+### Step 1 — Install the `harness` CLI
+
+Harness Stack isn't on the npm registry yet (see
+[Contributing](#contributing) if you'd like to help change that), but it
+installs the same way — straight from GitHub — and gives you a global
+`harness` command:
 
 ```bash
-npm run harness -- <command>     # e.g. npm run harness -- init
+npm install -g git+https://github.com/cloudbloqavi/harness-stack.git
 ```
 
-## Quick start
+Confirm it worked:
 
 ```bash
-harness init                       # asks your platform(s) + optional harness-brain, scaffolds .subagents/ + .harness/ + foundation
-harness build-agents               # generate platform-native agent files
-harness agent list                 # browse the registered sub-agents
-harness hooks                      # trigger -> native event-hook wiring plan
-harness skills                     # how agents are exposed as skills / slash commands
-harness check --all                # see the resource-aware orchestration plan
-harness seed                       # print the iteration seed (north-star + brain state) for loops
+harness --version
+# 0.1.0
 ```
 
-`harness init` asks which agentic platform(s) you use — Claude Code,
-Antigravity, Codex, Cursor, Copilot. **A repo can target several at once**
-(e.g. Claude Code + Cursor); pick multiple at the prompt or pass a comma list:
-`--platform claude-code,cursor` (or set `HARNESS_PLATFORM`). The selection is
-saved to `.harness/config.yaml`, and `build-agents` / `hooks` then default to
-**every configured platform** (add `--platform <id>` to target just one).
+<details>
+<summary><strong>Global install failed, or you'd rather not install globally?</strong></summary>
 
-### Optional: harness-brain commit-memory
+- **Permission error (EACCES)** — your npm is set up to need `sudo` for
+  global installs. Either re-run with `sudo npm install -g ...`, or (recommended)
+  fix npm's global prefix once by following the
+  [official npm guide](https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally).
+- **`nvm`-managed Node** — this is usually the smoothest path; nvm's global
+  installs don't need `sudo`.
+- **Don't want a global install** — clone the repo and run it locally instead:
+  ```bash
+  git clone https://github.com/cloudbloqavi/harness-stack.git
+  cd harness-stack && npm install && npm run build
+  npm link                 # makes `harness` available globally from this checkout
+  # or, without linking, from inside harness-stack/:
+  npm run harness -- <command>
+  ```
 
-During `init` you can also set up [harness-brain](https://github.com/cloudbloqavi/harness-brain),
-the git-backed commit-memory the `commit-brain-agent` writes into. It is
-**opt-in** — say no and nothing happens. Say yes and you choose a path plus a
-source:
+</details>
 
-- **clone** the default harness-brain repo (the worked examples, ready to adapt), or
-- **scaffold** the same structure locally (offline) from the bundled template.
+### Step 2 — Go to *your* project
 
 ```bash
-harness init --brain ../harness-brain                     # clone the default repo
-harness init --brain ./memory --brain-source scaffold     # local skeleton, no network
-harness init --skip-brain                                 # don't set it up
+cd ~/code/my-backend-service      # or your full-stack app, mobile repo, etc.
 ```
 
-The choice is recorded under `brain:` in `.harness/config.yaml`; point the
-agents at it with `export HARNESS_BRAIN_PATH=<path>`. A failed clone falls back
-to a local scaffold so `init` always completes.
+Harness always works on **the directory you run it from** — there's nothing
+to point at your project's name or type; it figures that out.
+
+### Step 3 — Run `harness init`
+
+```bash
+harness init
+```
+
+This asks you a few questions, interactively:
+
+```
+? Which agentic platform(s) do you use? (space to select, enter to confirm)
+  ◉ Claude Code
+  ◯ Cursor
+  ◯ Codex
+  ◯ Antigravity
+  ◯ GitHub Copilot
+
+? Set up harness-brain (git-backed commit memory)? (y/N)
+? Path for harness-brain [../harness-brain]:
+```
+
+- **Platform(s):** pick whichever AI coding tool(s) you actually use — you can
+  pick more than one, and Harness will generate files for all of them.
+- **harness-brain:** optional (see [below](#optional-commit-memory-harness-brain));
+  safe to say **no** for your first run, you can add it later.
+
+When it finishes, your repo has two new, plain-text folders:
+
+```
+your-project/
+├── .subagents/              ← the sub-agents, as readable YAML — edit these
+│   ├── harness-init-agent.yaml
+│   ├── test-author-agent.yaml
+│   └── ...
+├── .harness/                ← Harness's own config (model map, trigger map, ...)
+│   └── config.yaml
+├── AGENTS.md                ← operating rules appended for your main AI agent
+└── (everything else you already had, untouched)
+```
+
+Nothing here is a black box — every file is Markdown, YAML, or JSON. Open
+`.subagents/test-author-agent.yaml` right now and read it; it's a plain-English
+job description.
+
+### Step 4 — Generate the files your AI tool actually reads
+
+```bash
+harness build-agents
+```
+
+This reads every file in `.subagents/` and writes the **native** files your
+chosen platform(s) expect. For Claude Code, for example:
+
+```
+your-project/
+├── .claude/
+│   ├── agents/                  ← one file per sub-agent
+│   │   ├── test-author-agent.md
+│   │   └── ...
+│   ├── skills/                  ← decision-routable skills (auto-picked by the AI)
+│   └── commands/                ← manual slash commands, e.g. /verify
+```
+
+If you picked Cursor, Codex, Antigravity, or Copilot instead (or as well),
+you'll see `.cursor/`, `.codex/`, `.agents/`, or `.github/agents/` — see
+[the architecture diagram](#deep-dive-how-it-works) for the full map.
+
+**Re-run `harness build-agents` any time you edit a `.subagents/*.yaml` file** —
+generated files are always overwritten, so never hand-edit them.
+
+### Step 5 — Try it
+
+Open your AI coding tool inside this repo as normal, and either:
+
+- **Ask it something naturally** — e.g. "review my recent changes for missing
+  tests." A well-picked sub-agent (`test-author-agent`) can be routed to
+  automatically if it was exposed as a skill.
+- **Or invoke a command directly** — run `harness skills` to see the exact
+  slash command for each agent (e.g. `/verify`, `/review-drift`), then type it
+  in your AI tool's chat.
+
+```bash
+harness skills      # shows: agent -> which files it produced -> how to invoke it
+harness agent list  # browse every registered sub-agent and what it does
+harness hooks       # see which native event (or git hook) triggers each agent
+harness check --all # preview the pre-commit orchestration plan
+```
+
+### Step 6 — Commit the generated files
+
+`.subagents/`, `.harness/`, `AGENTS.md`, and the platform folders
+(`.claude/`, `.cursor/`, etc.) are meant to be **committed to git** — that's
+the whole point of "auditable": every teammate (and every PR reviewer) can see
+exactly what each agent is allowed to do, as a diffable text file.
+
+```bash
+git add .subagents .harness AGENTS.md .claude   # (or whichever platform folder you generated)
+git commit -m "Add Harness sub-agents"
+```
+
+### Optional: commit-memory (`harness-brain`)
+
+Harness can also keep a running, human-readable log of *what changed and why*
+across your commits, written by `commit-brain-agent` into a companion
+repository: [harness-brain](https://github.com/cloudbloqavi/harness-brain).
+It's entirely opt-in.
+
+```bash
+harness init --brain ../harness-brain                     # clone the shared example repo
+harness init --brain ./memory --brain-source scaffold     # or: local skeleton, no network needed
+harness init --skip-brain                                 # or: skip it (default if you say "no" at the prompt)
+```
+
+- **clone** pulls the [harness-brain](https://github.com/cloudbloqavi/harness-brain)
+  repo, complete with worked examples you can look at and adapt.
+- **scaffold** creates the same folder structure locally, offline, with no
+  network call.
+
+Either way, the choice is saved under `brain:` in `.harness/config.yaml`, and
+you point the agents at it with:
+
+```bash
+export HARNESS_BRAIN_PATH=/path/to/harness-brain
+```
+
+Full explanation, examples, and how to add your own project to it: see the
+[harness-brain README](https://github.com/cloudbloqavi/harness-brain#readme).
+
+### Troubleshooting
+
+| Problem | Fix |
+| --- | --- |
+| `harness: command not found` | The global `npm bin` isn't on your `PATH`. Run `npm config get prefix`, then add `<that path>/bin` to your shell's `PATH`. Or use `npm link` from a local clone (Step 1). |
+| `harness build-agents` fails with a fresh-context error | An agent needs a web-search tool + Context7 and your platform doesn't expose one yet. Re-run `harness init` and make sure you picked the right platform(s). |
+| Nothing happens when I ask my AI tool to use a sub-agent | Run `harness skills` — if the agent is command-only (not a "skill"), you need to invoke its slash command directly. |
+| I want to update to the latest Harness version | Re-run Step 1's install command — it reinstalls from the `main` branch. |
+
+<a id="deep-dive-how-it-works"></a>
+
+## 🧠 Deep dive: how it works
+
+The rest of this README is for people who want to understand — or modify —
+what's actually happening under the hood. Skip it if you just want to use
+Harness day to day.
 
 ## Architecture
 
@@ -286,7 +480,25 @@ the-loop is the default; the autonomous controller is opt-in and deferred. See
 See [`docs/spec-subagents.md`](docs/spec-subagents.md) for the full design spec
 and the Phase 2/3 catalog.
 
-## Development
+<a id="contributing"></a>
+
+## 🤝 Contributing
+
+Harness Stack is open source (MIT) and **contributions are welcome** — you
+don't need deep AI experience to help. Good starting points: fixing a docs
+typo, adding a worked example, improving an error message, or picking up a
+Phase 2 agent from [`docs/spec-subagents.md`](docs/spec-subagents.md).
+
+**Quick setup:**
+
+```bash
+git clone https://github.com/cloudbloqavi/harness-stack.git
+cd harness-stack
+npm install
+npm test              # vitest — should be all green before you start
+```
+
+**While you work:**
 
 ```bash
 npm run typecheck             # tsc --noEmit
@@ -299,6 +511,11 @@ npm run verify:brain-template # templates/brain/ matches the harness-brain repo
 [harness-brain](https://github.com/cloudbloqavi/harness-brain) example repo.
 `verify:brain-template` diffs them (defaults to a `../harness-brain` sibling
 checkout, or pass a path / set `HARNESS_BRAIN_DIR`); CI runs the same check.
+
+Full guide (branching, commit style, opening a PR, what a good first PR looks
+like): see [**CONTRIBUTING.md**](CONTRIBUTING.md). Questions or ideas? Open a
+[GitHub issue](https://github.com/cloudbloqavi/harness-stack/issues) — there's
+no such thing as a question too small.
 
 ## License
 
