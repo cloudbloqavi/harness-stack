@@ -41,6 +41,21 @@ Each brain holds two kinds of file:
 
 All dates are **fully numeric**: `YY-MM-DD` (e.g. `26-06-07` = 2026-06-07).
 
+### The two files map onto agentic-loop state
+
+The split is not just tidiness — it is what lets the brain act as a loop's
+externalized **state**:
+
+- The **compact rollup** is the *current-state digest*: small and current, it is
+  what `harness seed` re-injects at the start of each loop iteration ("read the
+  current state of the work before acting").
+- The **detailed log** is the *audit trail*: the append-only record that closes
+  the "quiet success" gap — read when a human needs the full why, never fed into
+  the iteration seed.
+
+See `harness-stack/docs/agentic-loop.md` for how the seed and verification gate
+use these.
+
 ```
    project repo (on_commit)                          new session start
           |                                                  |

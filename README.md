@@ -48,6 +48,7 @@ harness agent list                 # browse the registered sub-agents
 harness hooks                      # trigger -> native event-hook wiring plan
 harness skills                     # how agents are exposed as skills / slash commands
 harness check --all                # see the resource-aware orchestration plan
+harness seed                       # print the iteration seed (north-star + brain state) for loops
 ```
 
 `harness init` asks which agentic platform(s) you use — Claude Code,
@@ -248,6 +249,18 @@ agent.
 `harness check` computes the parallel batch: CPU cap (`cores - 1`), a 70%
 free-memory budget (per-agent `max_memory_mb` hints, 256 MB default),
 high-priority first, non-parallelizable agents sequenced.
+
+### Agentic loops (context reset + verification gate)
+
+Harness sits *beneath* an agentic loop and supplies its disciplines without
+building an uncontrolled one. `harness seed` materializes the **iteration
+seed** — the stable north-star (from `.harness/SEED.md`, a Spec Kit spec, or the
+README) plus the brain's compact rollup as the current-state digest — so each
+iteration re-seeds from a source of truth instead of drifting on its own
+transcript. The `drift-reviewer-agent` (semantic) and `verifier-agent`
+(executable) form the independent stop/continue gate on `on_check`. Human-in-
+the-loop is the default; the autonomous controller is opt-in and deferred. See
+[`docs/agentic-loop.md`](docs/agentic-loop.md).
 
 ## The v1 agent catalog
 
