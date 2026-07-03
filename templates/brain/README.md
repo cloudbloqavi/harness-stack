@@ -11,6 +11,124 @@ to surface a recent-change digest across a project and its related repos.
 It is intentionally simple: human-readable Markdown, no database, no service —
 just a repo you can grep, diff, and read.
 
+---
+
+## New here? Start with this
+
+**No AI/ML background needed.** Harness Brain is just a git repository full of
+Markdown files, laid out in a predictable folder structure. Think of it as a
+shared changelog that an AI agent (from [Harness Stack](https://github.com/cloudbloqavi/harness-stack))
+writes to automatically every time you commit, and reads from at the start of
+a new session — so it remembers *what changed and why*, across all your
+repos, without you re-explaining context every time.
+
+```mermaid
+flowchart LR
+    subgraph REPOS["Your repos"]
+      R1["repo A"]
+      R2["repo B (related to A)"]
+      R3["repo C (unrelated)"]
+    end
+    R1 -- "on commit" --> BRAIN
+    R2 -- "on commit" --> BRAIN
+    R3 -- "on commit" --> BRAIN
+    subgraph BRAIN["harness-brain (this repo)"]
+      B1["brain-1/ — A + B<br/>(related, read together)"]
+      B2["brain-2/ — C<br/>(unrelated, own brain)"]
+    end
+    BRAIN -- "new session start" --> DIGEST["recent-change digest,<br/>fed back to the agent"]
+    style B1 fill:#1f6feb22,stroke:#1f6feb
+    style B2 fill:#2ea04322,stroke:#2ea043
+```
+
+**Jump to:** [Use harness-brain in your own project](#use-harness-brain-in-your-own-project)
+· [Brains: how repos are grouped](#brains-how-repos-are-grouped) ·
+[Deep dive](#deep-dive) · [Contributing](#contributing)
+
+<a id="use-harness-brain-in-your-own-project"></a>
+
+## 🚀 Use harness-brain in your own project
+
+There are two ways to set this up, depending on how you're working.
+
+### Path A — you use Harness Stack (recommended, easiest)
+
+If you've installed the [`harness`](https://github.com/cloudbloqavi/harness-stack) CLI
+in your project already, it can set up harness-brain for you as part of
+`harness init` — no manual steps needed:
+
+```bash
+cd your-project
+harness init --brain ../harness-brain                     # clone this repo, with worked examples
+# or
+harness init --brain ./memory --brain-source scaffold     # generate the same structure locally, offline
+```
+
+That's it — skip to [Brains: how repos are grouped](#brains-how-repos-are-grouped)
+to understand the structure it just created for you. Full details of the
+`init` flow live in the
+[Harness Stack README](https://github.com/cloudbloqavi/harness-stack#optional-commit-memory-harness-brain).
+
+### Path B — standalone setup (no Harness Stack CLI, or you want full manual control)
+
+Useful if you want to inspect the structure first, wire it up by hand, or
+you're contributing a new worked example to this repo.
+
+**Step 1 — Clone this repo** (anywhere on disk — it doesn't need to live next
+to your project):
+
+```bash
+git clone https://github.com/cloudbloqavi/harness-brain.git ../harness-brain
+```
+
+**Step 2 — Point your project's agent at it**, so `commit-brain-agent` (and
+`cross-repo-discovery-agent`) know where to read/write:
+
+```bash
+export HARNESS_BRAIN_PATH=/absolute/path/to/harness-brain
+```
+
+Add that line to your shell profile (`~/.bashrc`, `~/.zshrc`, …) so it
+persists across terminal sessions.
+
+**Step 3 — Decide where your repo belongs.** Look at
+[`projects/`](projects) and ask: *is this repo related to another repo already
+in a brain* (e.g. an API and its web client — same product, different repos)?
+
+- **Yes, related to an existing repo** → add your repo as a new folder **inside
+  that repo's existing brain** (e.g. `projects/brain-1/your-repo/`).
+- **No, it's independent** → give it its **own new brain**: the next unused
+  number under `projects/` (e.g. if `brain-1` and `brain-2` exist, create
+  `projects/brain-3/your-repo/`).
+
+**Step 4 — Bootstrap the folder** using the templates in
+[`_templates/`](_templates) as your guide:
+
+```bash
+mkdir -p projects/brain-3/your-repo
+cp _templates/YY-MM-DD-HAR.md projects/brain-3/your-repo/26-07-03-HAR.md
+# fill in the placeholders, following the worked examples under projects/ as a model
+```
+
+Then create (or update) the brain's **single** compact rollup at
+`projects/brain-3/26-07-03-HAR-compact.md` from `_templates/YY-MM-DD-HAR-compact.md`
+(one block per repo in the brain — see the [worked example](projects/brain-1/26-06-07-HAR-compact.md)).
+
+**Step 5 — Commit and push.** From here on, if you've also set up Harness
+Stack's `commit-brain-agent` (Path A does this automatically), it will keep
+appending to your detailed log and refreshing the compact rollup on every
+commit — you won't need to repeat Steps 3–4 by hand again.
+
+### Troubleshooting
+
+| Problem | Fix |
+| --- | --- |
+| Agent isn't writing to the brain | Confirm `HARNESS_BRAIN_PATH` is set and exported in the shell your AI tool runs in (not just a one-off terminal). |
+| Not sure if two repos are "related" | Ask: does one depend on / get deployed with the other, or are they described as the same product? If yes → same brain. If they'd make sense open in separate contexts with no shared history → separate brains. |
+| I already have a brain — how do I add a *new* repo to it later | Same as Step 3–4 above: add a new `projects/<existing-brain>/<new-repo>/` folder and a block in that brain's compact rollup. |
+
+<a id="brains-how-repos-are-grouped"></a>
+
 ## Brains: how repos are grouped
 
 A **brain** is a numbered folder under `projects/` that groups repositories.
@@ -73,6 +191,14 @@ use these.
                 +-----------------------------------+
                   (located via HARNESS_BRAIN_PATH)
 ```
+
+<a id="deep-dive"></a>
+
+## 🔍 Deep dive
+
+Everything below is reference material — the exact file formats, the full
+directory layout, and how the agents read/write it. You don't need to read it
+to get started; come back when you want the details.
 
 ## Layout
 
@@ -140,3 +266,44 @@ The `cross-repo-discovery-agent` runs at session start. For the current repo it
 locates the repo's brain, reads the recent compact rollup plus the detailed logs
 of every repo in that brain (related repos, read together), and produces a
 digest. A repo in its own brain is digested in isolation.
+
+<a id="contributing"></a>
+
+## 🤝 Contributing
+
+This repo is open source (MIT) and **contributions are welcome**, code
+experience optional. Good starting points:
+
+- **Add a worked example** under `projects/` — a third "related repos" or
+  "unrelated repos" scenario helps future readers more than another paragraph
+  of prose.
+- **Improve `_templates/`** — the entry formats that every real brain follows.
+- **Improve this README** — if a step confused you, it'll confuse the next
+  person too; tell us where.
+- **Work on the writer/reader agents** — `commit-brain-agent` and
+  `cross-repo-discovery-agent` live in the
+  [harness-stack](https://github.com/cloudbloqavi/harness-stack) repo.
+
+**Quick setup** (this repo is plain Markdown — no build step, no dependencies):
+
+```bash
+git clone https://github.com/cloudbloqavi/harness-brain.git
+cd harness-brain
+```
+
+Make your change, following the existing files' format and style (all dates
+`YY-MM-DD`, one compact rollup per brain, one detailed log per repo per day —
+see [Files: detailed logs vs the compact rollup](#files-detailed-logs-vs-the-compact-rollup)).
+
+If your change touches `README.md`, `_templates/`, or `projects/`, note that
+[harness-stack](https://github.com/cloudbloqavi/harness-stack) keeps an
+offline mirror of this repo at `templates/brain/` and its CI checks that the
+two stay byte-identical — a companion PR there may be needed for a structural
+change to land cleanly (a docs-only fix, like a typo, does not need one).
+
+Full guide: see [**CONTRIBUTING.md**](CONTRIBUTING.md). Questions? Open a
+[GitHub issue](https://github.com/cloudbloqavi/harness-brain/issues).
+
+## License
+
+MIT — see [LICENSE](LICENSE).
