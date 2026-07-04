@@ -72,9 +72,10 @@ tests/                   ← vitest; one file roughly per src/ module
 
 `docs/index.html` is a single self-contained file (inline CSS + vanilla JS, no
 bundler, no dependencies) served by GitHub Pages. Its `AGENTS`, `PLATFORM_ROWS`,
-and `COMMANDS` constants near the bottom of the file mirror the README's agent
-catalog, platform table, and quickstart steps — there's no automated check, so
-if you change the agent roster or platform surfaces in the README, please
+`COMMANDS`, `NODE_DETAILS`, and `ECO_DETAILS` constants near the bottom of the
+file mirror the README's agent catalog, platform table, and quickstart steps
+— there's no automated check, so if you change the agent roster or platform
+surfaces in the README, please
 update this file's constants to match.
 
 If you're adding a **new sub-agent**, start in `templates/agents/*.yaml` —

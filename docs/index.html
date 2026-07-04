@@ -121,6 +121,8 @@
   .arch-node.pipeline { background: var(--pipeline); padding: 14px; width: 190px; }
   .arch-node.pipeline .n-title { color: var(--blue); font-weight: 600; margin-bottom: 4px; }
   .arch-node.pipeline .n-sub { font-size: 10.5px; }
+  #ecosystem .arch-node.pipeline { width: 170px; }
+  #ecosystem .arch-stack .arch-node { width: 170px; }
   .arch-platforms { display: flex; flex-direction: column; gap: 8px; justify-content: center; }
   .arch-node.platform { border-radius: 7px; padding: 8px 12px; width: 170px; font-size: 11.5px; color: var(--body); }
   .arch-detail { margin-top: 22px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 18px 20px; }
@@ -163,6 +165,7 @@
   <div class="wrap nav-inner" style="padding-left:0;padding-right:0;">
     <div class="brand"><span class="dot"></span>harness<span class="accent">-stack</span></div>
     <div class="nav-links">
+      <a href="#ecosystem">ecosystem</a>
       <a href="#quickstart">quickstart</a>
       <a href="#architecture">architecture</a>
       <a href="#agents">agents</a>
@@ -190,8 +193,69 @@
   </div>
 </div>
 
+<section id="ecosystem" class="wrap">
+  <div class="section-label"><span>// 01</span><h2>The ecosystem, zoomed out</h2></div>
+  <p class="section-sub">
+    Two repos, one workflow: <code>harness-stack</code> generates agents inside
+    <em>your</em> repo(s); <code>harness-brain</code> remembers what they did, across
+    all of them. Click a node here first — the sections below explain each part
+    in technical detail.
+    <a href="https://github.com/cloudbloqavi/harness-brain" target="_blank" rel="noopener" style="color:var(--muted);">harness-brain repo ↗</a>
+  </p>
+
+  <div class="arch-flow">
+    <div class="arch-stack">
+      <div class="arch-node" data-econode="repoA">
+        <div class="n-title">repo A</div>
+        <div class="n-sub">your project</div>
+      </div>
+      <div class="arch-node" data-econode="repoB">
+        <div class="n-title">repo B</div>
+        <div class="n-sub">related to A</div>
+      </div>
+      <div class="arch-node" data-econode="repoC">
+        <div class="n-title">repo C</div>
+        <div class="n-sub">unrelated</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow wide"><div>harness init<br>+ build-agents</div><div class="glyph">→</div></div>
+
+    <div class="arch-col">
+      <div class="arch-node pipeline" data-econode="stack">
+        <div class="n-title">harness-stack</div>
+        <div class="n-sub">the CLI, in<br>every repo</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow"><div>on commit</div><div class="glyph">→</div></div>
+
+    <div class="arch-col">
+      <div class="arch-node pipeline" data-econode="brain">
+        <div class="n-title">harness-brain</div>
+        <div class="n-sub">brain-1: A+B<br>brain-2: C</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow"><div>session start</div><div class="glyph">→</div></div>
+
+    <div class="arch-col">
+      <div class="arch-node" data-econode="digest">
+        <div class="n-title">digest</div>
+        <div class="n-sub">back to your<br>AI agent</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch-detail">
+    <div class="tag" id="eco-detail-tag"></div>
+    <div class="title" id="eco-detail-title"></div>
+    <div class="body" id="eco-detail-body"></div>
+  </div>
+</section>
+
 <section id="quickstart" class="wrap quickstart">
-  <div class="section-label"><span>// 01</span><h2>Quickstart, actually runnable</h2></div>
+  <div class="section-label"><span>// 02</span><h2>Quickstart, actually runnable</h2></div>
   <p class="section-sub">Click each command in order. Output is the real behavior described in the README.</p>
 
   <div class="qs-grid">
@@ -207,7 +271,7 @@
 </section>
 
 <section id="architecture" class="wrap">
-  <div class="section-label"><span>// 02</span><h2>Architecture</h2></div>
+  <div class="section-label"><span>// 03</span><h2>Architecture</h2></div>
   <p class="section-sub">Click any node for detail.</p>
 
   <div class="arch-flow">
@@ -257,7 +321,7 @@
 </section>
 
 <section id="agents" class="wrap">
-  <div class="section-label"><span>// 03</span><h2>Agent roster</h2></div>
+  <div class="section-label"><span>// 04</span><h2>Agent roster</h2></div>
   <p class="section-sub">9 agents, filterable by trigger.</p>
 
   <div class="pill-row" id="trigger-pills"></div>
@@ -271,7 +335,7 @@
 </section>
 
 <section id="platforms" class="wrap platforms">
-  <div class="section-label"><span>// 04</span><h2>Platform surfaces</h2></div>
+  <div class="section-label"><span>// 05</span><h2>Platform surfaces</h2></div>
   <p class="section-sub">Same <code>.subagents/*.yaml</code>, different native output per platform.</p>
 
   <div class="table" id="platforms-table">
@@ -385,6 +449,15 @@
 
   var NODE_IDS = ['repo', 'subagents', 'harnessconfig', 'agentsmd', 'pipeline', 'claude', 'cursor', 'codex', 'antigravity', 'copilot'];
 
+  var ECO_DETAILS = {
+    repoA: { tag: 'your repo', title: 'repo A — e.g. an API service', body: 'Any project you run `harness init` in. It gets its own .subagents/, .harness/, and platform-native agent files — see the Architecture section below for what happens inside a single repo.' },
+    repoB: { tag: 'related repo', title: 'repo B — e.g. its web client', body: 'A second repo from the SAME product as A. Related repos are grouped into one shared harness-brain "brain" folder, so the discovery agent reads their commit history together, not in isolation.' },
+    repoC: { tag: 'unrelated repo', title: 'repo C — an independent project', body: 'A repo with no relation to A or B — a different product, team, or purpose. It gets its own separate brain in harness-brain and is digested on its own.' },
+    stack: { tag: 'harness-stack', title: 'harness-stack — the CLI, installed once, run in every repo', body: 'Install the harness CLI globally on your machine, then run harness init + harness build-agents independently inside EACH repo you want harnessed. It turns .subagents/*.yaml into the native agent/skill/command files your AI coding tool actually reads — the same tool, the same steps, in repo A, B, and C.' },
+    brain: { tag: 'harness-brain', title: 'harness-brain — one shared memory repo', body: 'A separate git repo (a companion to harness-stack) that every harnessed repo’s commit-brain-agent writes into on each commit. Related repos (A + B) share one numbered "brain" folder; an unrelated repo (C) gets its own. See harness-brain’s README for the full model.' },
+    digest: { tag: 'read, at session start', title: 'cross-repo-discovery-agent — the digest', body: 'When you start a new AI coding session in a harnessed repo, this agent reads its brain’s recent compact rollup (and, for related repos, its siblings’ logs too) and surfaces a "what changed and why" digest — so your agent starts each session with real memory instead of a blank slate.' }
+  };
+
   function esc(s) {
     var d = document.createElement('div');
     d.textContent = s;
@@ -396,6 +469,7 @@
     transcript: [],
     ranSteps: {},
     selectedNode: 'pipeline',
+    selectedEcoNode: 'stack',
     activeTrigger: 'all',
     copyTimer: null
   };
@@ -475,6 +549,30 @@
 
   renderCards();
   renderTerminal();
+
+  /* ---------- ecosystem overview (harness-stack + harness-brain) ---------- */
+  var ecoDetailTag = document.getElementById('eco-detail-tag');
+  var ecoDetailTitle = document.getElementById('eco-detail-title');
+  var ecoDetailBody = document.getElementById('eco-detail-body');
+
+  function renderEco() {
+    Array.prototype.forEach.call(document.querySelectorAll('#ecosystem .arch-node[data-econode]'), function (el) {
+      el.classList.toggle('selected', el.getAttribute('data-econode') === state.selectedEcoNode);
+    });
+    var d = ECO_DETAILS[state.selectedEcoNode] || ECO_DETAILS.stack;
+    ecoDetailTag.textContent = d.tag;
+    ecoDetailTitle.textContent = d.title;
+    ecoDetailBody.textContent = d.body;
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('#ecosystem .arch-node[data-econode]'), function (el) {
+    el.addEventListener('click', function () {
+      state.selectedEcoNode = el.getAttribute('data-econode');
+      renderEco();
+    });
+  });
+
+  renderEco();
 
   /* ---------- architecture diagram ---------- */
   var archPlatformsEl = document.getElementById('arch-platforms');
