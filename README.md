@@ -4,8 +4,9 @@
 project and get a spec-driven sub-agent system that runs on any agentic coding
 platform — Claude Code, Antigravity, Codex, and more — with zero hand-wiring.
 
-Harness Stack is an open-source framework. An engineer runs `harness init` and
+**Harness Stack** is an open-source framework. An engineer runs `harness init` and
 gets a working, auditable, fresh-context-grounded agent harness in their repo.
+
 ---
 
 ## New here? Start with this
