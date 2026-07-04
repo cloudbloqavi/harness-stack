@@ -66,8 +66,17 @@ templates/
 docs/
   spec-subagents.md      ← the full design spec + Phase 2/3 roadmap
   agentic-loop.md        ← how Harness relates to agentic-loop patterns
+  index.html             ← the GitHub Pages landing site (self-contained, no build step)
 tests/                   ← vitest; one file roughly per src/ module
 ```
+
+`docs/index.html` is a single self-contained file (inline CSS + vanilla JS, no
+bundler, no dependencies) served by GitHub Pages. Its `AGENTS`, `PLATFORM_ROWS`,
+`COMMANDS`, `NODE_DETAILS`, and `ECO_DETAILS` constants near the bottom of the
+file mirror the README's agent catalog, platform table, and quickstart steps
+— there's no automated check, so if you change the agent roster or platform
+surfaces in the README, please
+update this file's constants to match.
 
 If you're adding a **new sub-agent**, start in `templates/agents/*.yaml` —
 copy an existing one close to what you need and adjust `capabilities`,

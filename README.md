@@ -7,6 +7,10 @@ platform — Claude Code, Antigravity, Codex, and more — with zero hand-wiring
 Harness Stack is an open-source framework. An engineer runs `harness init` and
 gets a working, auditable, fresh-context-grounded agent harness in their repo.
 
+**[→ Interactive site: architecture diagram, runnable quickstart, agent roster](https://cloudbloqavi.github.io/harness-stack/)**
+(source: [`docs/index.html`](docs/index.html); enable via *Settings → Pages →
+Source: Deploy from a branch → `main` / `/docs`* if it's 404ing).
+
 ---
 
 ## New here? Start with this

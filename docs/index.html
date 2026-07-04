@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harness Stack — an AI-native engineering harness for any repo, any coding agent</title>
+<meta name="description" content="harness init reads your project and generates spec-driven sub-agents — wired for Claude Code, Cursor, Codex, Antigravity, or Copilot — as diffable YAML you can audit, edit, and commit.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap">
+<style>
+  :root {
+    --bg: #0a0d12;
+    --panel: #11161d;
+    --terminal: #0d1117;
+    --pipeline: #0f1622;
+    --green-tint: #0f1a14;
+    --purple-tint: #1a1424;
+    --border: #232b36;
+    --border-nav: #1c232d;
+    --border-row: #171d26;
+    --border-green: #1d3a28;
+    --border-active: #5b9df9;
+    --heading: #f5f7fa;
+    --emphasis: #f0f3f7;
+    --body: #d5dbe3;
+    --muted: #8a97a8;
+    --system: #4a5568;
+    --green: #4ac26b;
+    --blue: #5b9df9;
+    --purple: #b78cf2;
+  }
+  html, body { margin: 0; background: var(--bg); }
+  * { box-sizing: border-box; }
+  ::selection { background: #5b9df955; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
+  @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+  @keyframes hsFadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  body {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: var(--bg);
+    color: var(--body);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  a { color: inherit; }
+  code { font-family: inherit; }
+  button { font-family: inherit; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* NAV */
+  .nav { position: sticky; top: 0; z-index: 50; background: #0a0d12ee; backdrop-filter: blur(6px); border-bottom: 1px solid var(--border-nav); }
+  .nav-inner { padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--emphasis); font-size: 15px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px #4ac26b99; display: inline-block; }
+  .brand .accent { color: var(--blue); }
+  .nav-links { display: flex; gap: 22px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; align-items: center; }
+  .nav-links a { text-decoration: none; }
+  .btn-pill { color: var(--body); border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; }
+
+  /* HERO */
+  .hero { padding: 72px 24px 56px; }
+  .badges { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .badge { font-size: 11px; padding: 4px 9px; border-radius: 5px; background: var(--panel); border: 1px solid var(--border); color: var(--muted); }
+  .badge.accent { background: var(--green-tint); border-color: var(--border-green); color: var(--green); }
+  h1 { font-size: 42px; line-height: 1.15; margin: 0 0 16px; color: var(--heading); font-weight: 700; letter-spacing: -0.5px; }
+  .subhead { font-size: 15px; color: var(--muted); max-width: 640px; margin: 0 0 28px; }
+  .subhead code { color: var(--body); }
+  .install-bar { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; max-width: 640px; }
+  .install-bar .prompt { color: var(--green); }
+  .install-bar code { color: var(--body); font-size: 13px; flex: 1; overflow-x: auto; white-space: nowrap; }
+  .copy-btn { background: #161c25; border: 1px solid var(--border); font-size: 11px; padding: 6px 10px; border-radius: 5px; cursor: pointer; white-space: nowrap; color: var(--muted); }
+  .copy-btn.copied { color: var(--green); }
+
+  /* SECTIONS */
+  section { padding: 24px 24px 64px; scroll-margin-top: 70px; }
+  section.quickstart { padding-top: 40px; }
+  section.platforms { padding-bottom: 72px; }
+  .section-label { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+  .section-label span { color: var(--blue); font-size: 12px; }
+  h2 { font-size: 22px; color: var(--heading); margin: 0; font-weight: 700; }
+  .section-sub { color: var(--muted); font-size: 13.5px; margin: 0 0 24px; max-width: 600px; }
+  .section-sub code { color: var(--body); }
+
+  /* QUICKSTART */
+  .qs-grid { display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start; }
+  .qs-cards { display: flex; flex-direction: column; gap: 10px; }
+  .cmd-card { text-align: left; border-radius: 8px; padding: 12px 14px; cursor: pointer; color: var(--body); background: var(--panel); border: 1px solid var(--border); width: 100%; }
+  .cmd-card.ran { background: var(--green-tint); border-color: var(--border-green); }
+  .cmd-card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .cmd-card-top .step { font-size: 10.5px; color: var(--muted); }
+  .cmd-card-top .status { font-size: 10px; color: var(--blue); }
+  .cmd-card.ran .status { color: var(--green); }
+  .cmd-card .label { font-size: 12.5px; color: var(--emphasis); margin-top: 4px; word-break: break-all; }
+  .clear-btn { margin-top: 6px; background: none; border: 1px solid var(--border); color: var(--muted); font-size: 11.5px; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
+  .terminal { background: var(--terminal); border: 1px solid var(--border); border-radius: 8px; height: 360px; overflow-y: auto; padding: 16px 18px; font-size: 12.5px; }
+  .terminal .term-head { color: var(--system); margin-bottom: 8px; }
+  .terminal .entry { margin-bottom: 14px; animation: hsFadeUp .25s ease; }
+  .terminal .entry .cmdline .prompt { color: var(--green); }
+  .terminal .entry .cmdline .cmdtext { color: var(--body); }
+  .terminal .entry .out { padding-left: 14px; white-space: pre-wrap; }
+  .terminal .waiting { color: var(--system); }
+  .cursor { animation: blink 1s step-end infinite; }
+
+  /* ARCHITECTURE */
+  .arch-flow { display: flex; align-items: stretch; gap: 14px; flex-wrap: wrap; }
+  .arch-col { display: flex; flex-direction: column; justify-content: center; }
+  .arch-node { cursor: pointer; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; width: 170px; font-size: 12px; }
+  .arch-node.selected { border-color: var(--border-active); }
+  .arch-node .n-title { color: var(--emphasis); font-weight: 600; margin-bottom: 4px; }
+  .arch-node .n-sub { color: var(--muted); font-size: 11px; }
+  .arch-stack { display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+  .arch-stack .arch-node { padding: 10px 14px; width: 190px; }
+  .arch-stack .arch-node .n-sub { font-size: 10.5px; }
+  .arch-arrow { display: flex; flex-direction: column; justify-content: center; color: var(--system); font-size: 11px; text-align: center; min-width: 70px; }
+  .arch-arrow.wide { min-width: 100px; }
+  .arch-arrow.bare { min-width: 40px; }
+  .arch-arrow .glyph { font-size: 16px; }
+  .arch-node.pipeline { background: var(--pipeline); padding: 14px; width: 190px; }
+  .arch-node.pipeline .n-title { color: var(--blue); font-weight: 600; margin-bottom: 4px; }
+  .arch-node.pipeline .n-sub { font-size: 10.5px; }
+  #ecosystem .arch-node.pipeline { width: 170px; }
+  #ecosystem .arch-stack .arch-node { width: 170px; }
+  .arch-platforms { display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+  .arch-node.platform { border-radius: 7px; padding: 8px 12px; width: 170px; font-size: 11.5px; color: var(--body); }
+  .arch-detail { margin-top: 22px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 18px 20px; }
+  .arch-detail .tag { color: var(--blue); font-size: 11px; margin-bottom: 6px; }
+  .arch-detail .title { color: var(--emphasis); font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .arch-detail .body { color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+  /* TABLES (agents + platforms) */
+  .pill-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .pill { font-size: 11.5px; padding: 6px 12px; border-radius: 16px; cursor: pointer; background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .pill.active { background: var(--pipeline); border-color: var(--border-active); color: var(--blue); }
+  .table { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .table .thead { display: grid; gap: 0; background: var(--panel); padding: 10px 16px; font-size: 10.5px; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .table .row { display: grid; gap: 0; padding: 12px 16px; font-size: 12px; border-bottom: 1px solid var(--border-row); }
+  .table .row:last-child { border-bottom: none; }
+  #agents-table .thead, #agents-table .row { grid-template-columns: 1.3fr 0.6fr 2.4fr 1fr; }
+  #platforms-table .thead, #platforms-table .row { grid-template-columns: 1fr 1.6fr 1.6fr; font-size: 11.5px; }
+  .cell-id { color: var(--emphasis); }
+  .cell-muted { color: var(--muted); }
+  .tier-pill { font-size: 10px; padding: 2px 7px; border-radius: 4px; }
+  .tier-fast { background: var(--green-tint); color: var(--green); }
+  .tier-reasoning { background: var(--pipeline); color: var(--blue); }
+  .tier-deep { background: var(--purple-tint); color: var(--purple); }
+
+  /* FOOTER */
+  footer { border-top: 1px solid var(--border-nav); }
+  .footer-inner { padding: 28px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--system); }
+  .footer-links { display: flex; gap: 16px; }
+  .footer-links a { color: var(--muted); text-decoration: none; }
+
+  @media (max-width: 760px) {
+    .qs-grid { grid-template-columns: 1fr; }
+    h1 { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="wrap nav-inner" style="padding-left:0;padding-right:0;">
+    <div class="brand"><span class="dot"></span>harness<span class="accent">-stack</span></div>
+    <div class="nav-links">
+      <a href="#ecosystem">ecosystem</a>
+      <a href="#quickstart">quickstart</a>
+      <a href="#architecture">architecture</a>
+      <a href="#agents">agents</a>
+      <a href="#platforms">platforms</a>
+      <a class="btn-pill" href="https://github.com/cloudbloqavi/harness-stack" target="_blank" rel="noopener">github ↗</a>
+    </div>
+  </div>
+</div>
+
+<div class="wrap hero">
+  <div class="badges">
+    <span class="badge">MIT licensed</span>
+    <span class="badge">v0.1.0</span>
+    <span class="badge accent">platform-agnostic</span>
+  </div>
+  <h1>An AI-native engineering harness<br>for any repo, any coding agent.</h1>
+  <p class="subhead">
+    <code>harness init</code> reads your project and generates spec-driven sub-agents —
+    wired for Claude Code, Cursor, Codex, Antigravity, or Copilot — as diffable YAML you can audit, edit, and commit.
+  </p>
+  <div class="install-bar">
+    <span class="prompt">$</span>
+    <code id="install-cmd">npm install -g git+https://github.com/cloudbloqavi/harness-stack.git</code>
+    <button class="copy-btn" id="copy-btn">copy</button>
+  </div>
+</div>
+
+<section id="ecosystem" class="wrap">
+  <div class="section-label"><span>// 01</span><h2>The ecosystem, zoomed out</h2></div>
+  <p class="section-sub">
+    Two repos, one workflow: <code>harness-stack</code> generates agents inside
+    <em>your</em> repo(s); <code>harness-brain</code> remembers what they did, across
+    all of them. Click a node here first — the sections below explain each part
+    in technical detail.
+    <a href="https://github.com/cloudbloqavi/harness-brain" target="_blank" rel="noopener" style="color:var(--muted);">harness-brain repo ↗</a>
+  </p>
+
+  <div class="arch-flow">
+    <div class="arch-stack">
+      <div class="arch-node" data-econode="repoA">
+        <div class="n-title">repo A</div>
+        <div class="n-sub">your project</div>
+      </div>
+      <div class="arch-node" data-econode="repoB">
+        <div class="n-title">repo B</div>
+        <div class="n-sub">related to A</div>
+      </div>
+      <div class="arch-node" data-econode="repoC">
+        <div class="n-title">repo C</div>
+        <div class="n-sub">unrelated</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow wide"><div>harness init<br>+ build-agents</div><div class="glyph">→</div></div>
+
+    <div class="arch-col">
+      <div class="arch-node pipeline" data-econode="stack">
+        <div class="n-title">harness-stack</div>
+        <div class="n-sub">the CLI, in<br>every repo</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow"><div>on commit</div><div class="glyph">→</div></div>
+
+    <div class="arch-col">
+      <div class="arch-node pipeline" data-econode="brain">
+        <div class="n-title">harness-brain</div>
+        <div class="n-sub">brain-1: A+B<br>brain-2: C</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow"><div>session start</div><div class="glyph">→</div></div>
+
+    <div class="arch-col">
+      <div class="arch-node" data-econode="digest">
+        <div class="n-title">digest</div>
+        <div class="n-sub">back to your<br>AI agent</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch-detail">
+    <div class="tag" id="eco-detail-tag"></div>
+    <div class="title" id="eco-detail-title"></div>
+    <div class="body" id="eco-detail-body"></div>
+  </div>
+</section>
+
+<section id="quickstart" class="wrap quickstart">
+  <div class="section-label"><span>// 02</span><h2>Quickstart, actually runnable</h2></div>
+  <p class="section-sub">Click each command in order. Output is the real behavior described in the README.</p>
+
+  <div class="qs-grid">
+    <div class="qs-cards">
+      <div id="cmd-cards"></div>
+      <button class="clear-btn" id="clear-terminal">clear terminal ↺</button>
+    </div>
+    <div class="terminal" id="terminal">
+      <div class="term-head">─ harness@your-project</div>
+      <div id="terminal-body"></div>
+    </div>
+  </div>
+</section>
+
+<section id="architecture" class="wrap">
+  <div class="section-label"><span>// 03</span><h2>Architecture</h2></div>
+  <p class="section-sub">Click any node for detail.</p>
+
+  <div class="arch-flow">
+    <div class="arch-col">
+      <div class="arch-node" data-node="repo">
+        <div class="n-title">your repo</div>
+        <div class="n-sub">src/, tests/,<br>README.md ...</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow"><div>harness init</div><div class="glyph">→</div></div>
+
+    <div class="arch-stack">
+      <div class="arch-node" data-node="subagents">
+        <div class="n-title">.subagents/*.yaml</div>
+        <div class="n-sub">source of truth</div>
+      </div>
+      <div class="arch-node" data-node="harnessconfig">
+        <div class="n-title">.harness/</div>
+        <div class="n-sub">model &amp; trigger maps</div>
+      </div>
+      <div class="arch-node" data-node="agentsmd">
+        <div class="n-title">AGENTS.md</div>
+        <div class="n-sub">operating rules</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow wide"><div>build-agents</div><div class="glyph">→</div></div>
+
+    <div class="arch-col">
+      <div class="arch-node pipeline" data-node="pipeline">
+        <div class="n-title">resolution<br>pipeline</div>
+        <div class="n-sub">tier → model<br>cap. → tools<br>trigger → hook</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow bare"><div class="glyph">→</div></div>
+
+    <div class="arch-platforms" id="arch-platforms"></div>
+  </div>
+
+  <div class="arch-detail">
+    <div class="tag" id="detail-tag"></div>
+    <div class="title" id="detail-title"></div>
+    <div class="body" id="detail-body"></div>
+  </div>
+</section>
+
+<section id="agents" class="wrap">
+  <div class="section-label"><span>// 04</span><h2>Agent roster</h2></div>
+  <p class="section-sub">9 agents, filterable by trigger.</p>
+
+  <div class="pill-row" id="trigger-pills"></div>
+
+  <div class="table" id="agents-table">
+    <div class="thead">
+      <div>agent</div><div>tier</div><div>purpose</div><div>exposed as</div>
+    </div>
+    <div id="agents-rows"></div>
+  </div>
+</section>
+
+<section id="platforms" class="wrap platforms">
+  <div class="section-label"><span>// 05</span><h2>Platform surfaces</h2></div>
+  <p class="section-sub">Same <code>.subagents/*.yaml</code>, different native output per platform.</p>
+
+  <div class="table" id="platforms-table">
+    <div class="thead">
+      <div>platform</div><div>skill (decision-routed)</div><div>command (manual)</div>
+    </div>
+    <div id="platforms-rows"></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-inner" style="padding-left:0;padding-right:0;">
+    <div>harness-stack · MIT · cloudbloqavi</div>
+    <div class="footer-links">
+      <a href="https://github.com/cloudbloqavi/harness-stack" target="_blank" rel="noopener">repo ↗</a>
+      <a href="https://github.com/cloudbloqavi/harness-stack/issues" target="_blank" rel="noopener">issues ↗</a>
+      <a href="https://github.com/cloudbloqavi/harness-brain" target="_blank" rel="noopener">harness-brain ↗</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var COMMANDS = [
+    {
+      step: '1',
+      label: 'harness init',
+      cmd: 'harness init',
+      lines: [
+        { text: '? Which agentic platform(s) do you use? Claude Code, Cursor', color: 'var(--muted)' },
+        { text: '? Set up harness-brain (git-backed commit memory)? Y', color: 'var(--muted)' },
+        { text: '? Path for harness-brain [../harness-brain]:', color: 'var(--muted)' },
+        { text: '✓ wrote .subagents/*.yaml (9 agents)', color: 'var(--green)' },
+        { text: '✓ wrote .harness/config.yaml, model-map.yaml, trigger-map.yaml  (brain: enabled)', color: 'var(--green)' },
+        { text: '✓ cloned harness-brain → ../harness-brain', color: 'var(--green)' },
+        { text: '✓ appended AGENTS.md (fresh-context operating rules)', color: 'var(--green)' }
+      ]
+    },
+    {
+      step: '2',
+      label: 'harness build-agents',
+      cmd: 'harness build-agents',
+      lines: [
+        { text: 'reading .subagents/*.yaml ...', color: 'var(--muted)' },
+        { text: '✓ .claude/agents/*.md (9)', color: 'var(--green)' },
+        { text: '✓ .claude/skills/*/SKILL.md (4 decision-routed)', color: 'var(--green)' },
+        { text: '✓ .claude/commands/*.md (9)', color: 'var(--green)' },
+        { text: 'done in 0.41s', color: 'var(--system)' }
+      ]
+    },
+    {
+      step: '3',
+      label: 'harness check --all',
+      cmd: 'harness check --all',
+      lines: [
+        { text: 'resolving parallel batch — cpu cap 7, mem budget 70%', color: 'var(--muted)' },
+        { text: '▸ drift-reviewer-agent   ok  (semantic drift: none)', color: 'var(--body)' },
+        { text: '▸ verifier-agent         ok  (2/2 changed files covered)', color: 'var(--body)' },
+        { text: '✓ all checks passed', color: 'var(--green)' }
+      ]
+    },
+    {
+      step: '4',
+      label: 'git commit',
+      cmd: 'git add .subagents .harness AGENTS.md .claude && git commit -m "Add Harness sub-agents"',
+      lines: [
+        { text: '[main 7abaaee] Add Harness sub-agents', color: 'var(--body)' },
+        { text: '▸ commit-brain-agent  writing summary → harness-brain', color: 'var(--muted)' },
+        { text: '✓ commit memory updated', color: 'var(--green)' }
+      ]
+    }
+  ];
+
+  var AGENTS = [
+    { id: 'harness-init-agent', tier: 'reasoning', triggers: ['on_init'], purpose: 'Classify project, gap report, install base tooling.', expose: 'command' },
+    { id: 'spec-author-agent', tier: 'reasoning', triggers: ['on_init'], purpose: 'Drive Spec Kit: constitution → spec → plan → tasks.', expose: 'command' },
+    { id: 'dependency-audit-agent', tier: 'reasoning', triggers: ['on_init', 'on_demand'], purpose: 'Maintain DEPENDENCIES.md — latest / outdated / deprecated / EOL — from live data.', expose: 'command' },
+    { id: 'skills-router-agent', tier: 'fast', triggers: ['on_demand'], purpose: 'Rank skills across sources, consent-gated.', expose: 'skill + command' },
+    { id: 'mcp-router-agent', tier: 'fast', triggers: ['on_demand'], purpose: 'Rank MCP servers from the curated allowlist.', expose: 'skill + command' },
+    { id: 'test-author-agent', tier: 'reasoning', triggers: ['on_demand', 'on_check'], purpose: 'Review unit tests, surface gaps, author missing ones on consent.', expose: 'command' },
+    { id: 'drift-reviewer-agent', tier: 'reasoning', triggers: ['on_check', 'on_demand'], purpose: 'Pre-commit semantic check: docstring / doc / low-level-design drift vs. the diff.', expose: 'skill + command' },
+    { id: 'verifier-agent', tier: 'reasoning', triggers: ['on_check', 'on_demand'], purpose: 'Pre-commit executable check: confirm the change is covered by passing tests. No write.', expose: 'skill + command' },
+    { id: 'commit-brain-agent', tier: 'fast', triggers: ['on_commit'], purpose: 'Summarise the diff into harness-brain.', expose: 'skill + command' }
+  ];
+
+  var TIER_CLASS = { fast: 'tier-fast', reasoning: 'tier-reasoning', deep: 'tier-deep' };
+  var TRIGGERS = ['all', 'on_init', 'on_demand', 'on_check', 'on_commit'];
+
+  var NODE_DETAILS = {
+    repo: { tag: 'source', title: 'your repo', body: 'Harness always works on the directory you run it from — a full-stack app, a backend service, a mobile app, a library. Nothing to point at your project’s name or type; it figures that out.' },
+    subagents: { tag: '.subagents/', title: '.subagents/*.yaml — canonical source of truth', body: 'Plain-English agent specs: name, tier, capabilities, triggers, prompt. Platform-agnostic by construction — no spec names a concrete model or platform tool. Edit these, never the generated files; they’re overwritten on every build.' },
+    harnessconfig: { tag: '.harness/', title: '.harness/ — Harness’s own config', body: 'model-map.yaml (model_tier → concrete model per platform), trigger-map.yaml (abstract trigger → native hook or fallback), allowlists/*.yaml, and config.yaml (which platforms are enabled).' },
+    agentsmd: { tag: 'AGENTS.md', title: 'AGENTS.md — operating rules', body: 'Appended for your main AI agent. Extends the fresh-context mandate: any agent reasoning about libraries, APIs, versions, or CVEs must run with web search + Context7, never stale training data.' },
+    pipeline: { tag: 'resolution pipeline', title: 'model_tier / capabilities / triggers → native', body: 'model_tier —[model-map]→ concrete model. capabilities —[adapter]→ native tools. triggers —[trigger-map]→ native hooks or git-hook fallback. requires_fresh_context → asserts web_search + Context7, else build-agents fails with an actionable error.' },
+    claude: { tag: 'platform', title: 'Claude Code', body: 'agents → .claude/agents/<name>.md · skill → .claude/skills/<c>/SKILL.md · command → .claude/commands/<c>.md invoked as /<c>.' },
+    cursor: { tag: 'platform', title: 'Cursor (2.4)', body: 'agents → .cursor/agents/<name>.md · skill → .cursor/skills/<c>/SKILL.md · command → .cursor/commands/<c>.md invoked as /<c>.' },
+    codex: { tag: 'platform', title: 'Codex', body: 'agents → .codex/agents/<name>.toml · skill → .agents/skills/<c>/SKILL.md (implicit invocation) · command → same skill, explicit $<c> (allow_implicit_invocation: false).' },
+    antigravity: { tag: 'platform', title: 'Antigravity', body: 'the sub-agent .agents/skills/<name>/SKILL.md IS the decision-routed skill · command → .agents/workflows/<c>.md invoked as /<c>.' },
+    copilot: { tag: 'platform', title: 'GitHub Copilot', body: 'the sub-agent .github/agents/<name>.agent.md IS the decision-routed skill · command → .github/prompts/<c>.prompt.md invoked as /<c>.' }
+  };
+
+  var PLATFORM_ROWS = [
+    { id: 'claude', name: 'Claude Code', skill: '.claude/skills/<c>/SKILL.md', command: '.claude/commands/<c>.md → /<c>' },
+    { id: 'cursor', name: 'Cursor', skill: '.cursor/skills/<c>/SKILL.md', command: '.cursor/commands/<c>.md → /<c>' },
+    { id: 'codex', name: 'Codex', skill: '.agents/skills/<c>/SKILL.md (implicit)', command: 'same skill, explicit $<c>' },
+    { id: 'antigravity', name: 'Antigravity', skill: 'sub-agent is the skill', command: '.agents/workflows/<c>.md → /<c>' },
+    { id: 'copilot', name: 'GitHub Copilot', skill: 'sub-agent is the skill', command: '.github/prompts/<c>.prompt.md → /<c>' }
+  ];
+
+  var NODE_IDS = ['repo', 'subagents', 'harnessconfig', 'agentsmd', 'pipeline', 'claude', 'cursor', 'codex', 'antigravity', 'copilot'];
+
+  var ECO_DETAILS = {
+    repoA: { tag: 'your repo', title: 'repo A — e.g. an API service', body: 'Any project you run `harness init` in. It gets its own .subagents/, .harness/, and platform-native agent files — see the Architecture section below for what happens inside a single repo.' },
+    repoB: { tag: 'related repo', title: 'repo B — e.g. its web client', body: 'A second repo from the SAME product as A. Related repos are grouped into one shared harness-brain "brain" folder, so the discovery agent reads their commit history together, not in isolation.' },
+    repoC: { tag: 'unrelated repo', title: 'repo C — an independent project', body: 'A repo with no relation to A or B — a different product, team, or purpose. It gets its own separate brain in harness-brain and is digested on its own.' },
+    stack: { tag: 'harness-stack', title: 'harness-stack — the CLI, installed once, run in every repo', body: 'Install the harness CLI globally on your machine, then run harness init + harness build-agents independently inside EACH repo you want harnessed. It turns .subagents/*.yaml into the native agent/skill/command files your AI coding tool actually reads — the same tool, the same steps, in repo A, B, and C.' },
+    brain: { tag: 'harness-brain', title: 'harness-brain — one shared memory repo', body: 'A separate git repo (a companion to harness-stack) that every harnessed repo’s commit-brain-agent writes into on each commit. Related repos (A + B) share one numbered "brain" folder; an unrelated repo (C) gets its own. See harness-brain’s README for the full model.' },
+    digest: { tag: 'read, at session start', title: 'cross-repo-discovery-agent — the digest', body: 'When you start a new AI coding session in a harnessed repo, this agent reads its brain’s recent compact rollup (and, for related repos, its siblings’ logs too) and surfaces a "what changed and why" digest — so your agent starts each session with real memory instead of a blank slate.' }
+  };
+
+  function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  /* ---------- state ---------- */
+  var state = {
+    transcript: [],
+    ranSteps: {},
+    selectedNode: 'pipeline',
+    selectedEcoNode: 'stack',
+    activeTrigger: 'all',
+    copyTimer: null
+  };
+
+  /* ---------- copy install command ---------- */
+  var copyBtn = document.getElementById('copy-btn');
+  copyBtn.addEventListener('click', function () {
+    var text = document.getElementById('install-cmd').textContent;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).catch(function () {});
+    }
+    copyBtn.textContent = 'copied ✓';
+    copyBtn.classList.add('copied');
+    clearTimeout(state.copyTimer);
+    state.copyTimer = setTimeout(function () {
+      copyBtn.textContent = 'copy';
+      copyBtn.classList.remove('copied');
+    }, 1600);
+  });
+
+  /* ---------- quickstart terminal ---------- */
+  var cardsEl = document.getElementById('cmd-cards');
+  var termBody = document.getElementById('terminal-body');
+  var termEl = document.getElementById('terminal');
+
+  function renderCards() {
+    cardsEl.innerHTML = COMMANDS.map(function (c, idx) {
+      var ran = !!state.ranSteps[idx];
+      return '' +
+        '<button class="cmd-card' + (ran ? ' ran' : '') + '" data-idx="' + idx + '">' +
+          '<div class="cmd-card-top">' +
+            '<span class="step">step ' + esc(c.step) + '</span>' +
+            '<span class="status">' + (ran ? 'ran ✓' : 'run ▸') + '</span>' +
+          '</div>' +
+          '<div class="label">' + esc(c.label) + '</div>' +
+        '</button>';
+    }).join('');
+    Array.prototype.forEach.call(cardsEl.querySelectorAll('.cmd-card'), function (btn) {
+      btn.addEventListener('click', function () {
+        runCommand(parseInt(btn.getAttribute('data-idx'), 10));
+      });
+    });
+  }
+
+  function renderTerminal() {
+    if (state.transcript.length === 0) {
+      termBody.innerHTML = '<div class="waiting">waiting for a command<span class="cursor">▌</span></div>';
+      return;
+    }
+    termBody.innerHTML = state.transcript.map(function (entry) {
+      var lines = entry.lines.map(function (ln) {
+        return '<div class="out" style="color:' + ln.color + ';">' + esc(ln.text) + '</div>';
+      }).join('');
+      return '' +
+        '<div class="entry">' +
+          '<div class="cmdline"><span class="prompt">$</span> <span class="cmdtext">' + esc(entry.cmd) + '</span></div>' +
+          lines +
+        '</div>';
+    }).join('');
+    termEl.scrollTop = termEl.scrollHeight;
+  }
+
+  function runCommand(idx) {
+    var c = COMMANDS[idx];
+    state.transcript = state.transcript.concat([{ cmd: c.cmd, lines: c.lines }]);
+    state.ranSteps[idx] = true;
+    renderCards();
+    renderTerminal();
+  }
+
+  document.getElementById('clear-terminal').addEventListener('click', function () {
+    state.transcript = [];
+    state.ranSteps = {};
+    renderCards();
+    renderTerminal();
+  });
+
+  renderCards();
+  renderTerminal();
+
+  /* ---------- ecosystem overview (harness-stack + harness-brain) ---------- */
+  var ecoDetailTag = document.getElementById('eco-detail-tag');
+  var ecoDetailTitle = document.getElementById('eco-detail-title');
+  var ecoDetailBody = document.getElementById('eco-detail-body');
+
+  function renderEco() {
+    Array.prototype.forEach.call(document.querySelectorAll('#ecosystem .arch-node[data-econode]'), function (el) {
+      el.classList.toggle('selected', el.getAttribute('data-econode') === state.selectedEcoNode);
+    });
+    var d = ECO_DETAILS[state.selectedEcoNode] || ECO_DETAILS.stack;
+    ecoDetailTag.textContent = d.tag;
+    ecoDetailTitle.textContent = d.title;
+    ecoDetailBody.textContent = d.body;
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('#ecosystem .arch-node[data-econode]'), function (el) {
+    el.addEventListener('click', function () {
+      state.selectedEcoNode = el.getAttribute('data-econode');
+      renderEco();
+    });
+  });
+
+  renderEco();
+
+  /* ---------- architecture diagram ---------- */
+  var archPlatformsEl = document.getElementById('arch-platforms');
+  archPlatformsEl.innerHTML = PLATFORM_ROWS.map(function (p) {
+    return '<div class="arch-node platform" data-node="' + p.id + '">' + esc(p.name) + '</div>';
+  }).join('');
+
+  var detailTag = document.getElementById('detail-tag');
+  var detailTitle = document.getElementById('detail-title');
+  var detailBody = document.getElementById('detail-body');
+
+  function renderArch() {
+    Array.prototype.forEach.call(document.querySelectorAll('.arch-node[data-node]'), function (el) {
+      el.classList.toggle('selected', el.getAttribute('data-node') === state.selectedNode);
+    });
+    var d = NODE_DETAILS[state.selectedNode] || NODE_DETAILS.pipeline;
+    detailTag.textContent = d.tag;
+    detailTitle.textContent = d.title;
+    detailBody.textContent = d.body;
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.arch-node[data-node]'), function (el) {
+    el.addEventListener('click', function () {
+      state.selectedNode = el.getAttribute('data-node');
+      renderArch();
+    });
+  });
+
+  renderArch();
+
+  /* ---------- agent roster ---------- */
+  var pillsEl = document.getElementById('trigger-pills');
+  var rowsEl = document.getElementById('agents-rows');
+
+  pillsEl.innerHTML = TRIGGERS.map(function (t) {
+    return '<button class="pill" data-trigger="' + esc(t) + '">' + esc(t) + '</button>';
+  }).join('');
+
+  function renderAgents() {
+    Array.prototype.forEach.call(pillsEl.querySelectorAll('.pill'), function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-trigger') === state.activeTrigger);
+    });
+    var filtered = AGENTS.filter(function (a) {
+      return state.activeTrigger === 'all' || a.triggers.indexOf(state.activeTrigger) !== -1;
+    });
+    rowsEl.innerHTML = filtered.map(function (a) {
+      return '' +
+        '<div class="row">' +
+          '<div class="cell-id">' + esc(a.id) + '</div>' +
+          '<div><span class="tier-pill ' + TIER_CLASS[a.tier] + '">' + esc(a.tier) + '</span></div>' +
+          '<div class="cell-muted">' + esc(a.purpose) + '</div>' +
+          '<div class="cell-muted" style="font-size:11px;">' + esc(a.expose) + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  Array.prototype.forEach.call(pillsEl.querySelectorAll('.pill'), function (btn) {
+    btn.addEventListener('click', function () {
+      state.activeTrigger = btn.getAttribute('data-trigger');
+      renderAgents();
+    });
+  });
+
+  renderAgents();
+
+  /* ---------- platform surfaces table ---------- */
+  document.getElementById('platforms-rows').innerHTML = PLATFORM_ROWS.map(function (p) {
+    return '' +
+      '<div class="row">' +
+        '<div class="cell-id">' + esc(p.name) + '</div>' +
+        '<div class="cell-muted">' + esc(p.skill) + '</div>' +
+        '<div class="cell-muted">' + esc(p.command) + '</div>' +
+      '</div>';
+  }).join('');
+})();
+</script>
+</body>
+</html>
