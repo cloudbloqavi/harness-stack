@@ -1,26 +1,43 @@
 # Harness Brain
 
-**The shared commit-memory for projects managed by [Harness Stack](https://github.com/cloudbloqavi/harness-stack).**
+**Harness Brain is your team's shared memory of "what changed and why."** It's
+a plain-Markdown, git-backed log that [Harness Stack](https://github.com/cloudbloqavi/harness-stack)'s
+`commit-brain-agent` writes to automatically on every commit — so the next
+person (or your AI tool, at the start of a new session) can catch up in
+seconds instead of re-reading git blame or re-explaining context from scratch.
 
-Harness Brain is a plain-Markdown, git-backed memory of *what changed and why*
-across every project in your ecosystem. The `commit-brain-agent` writes a
-detailed per-repo log here on each commit and rolls it up into a compact
-per-brain digest; the `cross-repo-discovery-agent` reads those at session start
-to surface a recent-change digest across a project and its related repos.
-
-It is intentionally simple: human-readable Markdown, no database, no service —
-just a repo you can grep, diff, and read.
+No database, no hosted service, no background daemon — just a git repo full of
+Markdown you can grep, diff, and read like anything else.
 
 ---
 
-## New here? Start with this
+## 🧩 What you actually get
 
-**No AI/ML background needed.** Harness Brain is just a git repository full of
-Markdown files, laid out in a predictable folder structure. Think of it as a
-shared changelog that an AI agent (from [Harness Stack](https://github.com/cloudbloqavi/harness-stack))
-writes to automatically every time you commit, and reads from at the start of
-a new session — so it remembers *what changed and why*, across all your
-repos, without you re-explaining context every time.
+| Situation | Without Harness Brain | With Harness Brain |
+| --- | --- | --- |
+| You open a repo you haven't touched in weeks | Scroll `git log`, guess at intent | Read one compact rollup file — recent changes, in plain English |
+| Your AI tool starts a new session | Explain the whole backstory again | It reads a ready-made digest of recent changes across the repo (and related repos) |
+| A product spans multiple repos (API + web client) | Check each repo's history separately | One shared "brain" covers all of them together |
+| You want to know *why* a change was made 3 weeks ago | Dig through PR descriptions | Read the dated, per-repo detailed log entry |
+
+## 🤔 "Isn't this just what git log / commit messages already do?"
+
+Close, but not quite:
+
+- **Commit messages describe one commit in isolation.** Harness Brain's
+  compact rollup summarizes the *state* across many commits and repos, kept
+  current — something you'd otherwise have to reconstruct by reading a dozen
+  commits.
+- **It's cross-repo.** If your product is split across an API and a web
+  client, git log for one repo never mentions the other. A shared brain reads
+  both together.
+- **It's built to be machine-read, not just human-read.** Harness Stack's
+  agents consume the compact rollup automatically at session start — no one
+  has to remember to go read the changelog.
+
+If your project is a single small repo and you don't use Harness Stack's
+agents, you may not need this — plain `git log` might be enough, and that's
+fine.
 
 ```mermaid
 flowchart LR
