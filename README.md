@@ -1,23 +1,46 @@
 # Harness Stack
 
-**An AI-native, platform-agnostic engineering harness.** Drop it into any
-project and get a spec-driven sub-agent system that runs on any agentic coding
-platform — Claude Code, Antigravity, Codex, and more — with zero hand-wiring.
+**Harness Stack keeps your AI coding tool honest.** It automatically checks
+that your tests actually cover what you just changed, flags docs that fell out
+of sync with the code, and remembers *why* past changes were made — so you
+(and your team) stop re-explaining the codebase to your AI tool every single
+session.
 
-**Harness Stack** is an open-source framework. An engineer runs `harness init` and
-gets a working, auditable, fresh-context-grounded agent harness in their repo.
+You run one command (`harness init`) inside your own repo. It works with
+whatever AI coding tool you already use — Claude Code, Cursor, Codex,
+Antigravity, or GitHub Copilot. **No AI/ML background required.**
 
 ---
 
-## New here? Start with this
+## 🧩 What you actually get
 
-**You do not need any AI/ML background to use this.** Harness is a small
-command-line tool (`harness`) you run once inside *your own* code repository —
-a full-stack app, a backend service, a mobile app, anything. It looks at your
-project and generates a set of ready-to-use **sub-agents** (small, focused AI
-helpers — "review my docs for drift", "write missing tests", "log this commit
-to memory") wired up for whichever AI coding tool you already use (Claude
-Code, Cursor, Codex, Antigravity, or GitHub Copilot).
+| When you... | Harness... |
+| --- | --- |
+| Write new code and try to commit | 🧪 Checks the change is covered by tests — writes them for you if you say yes |
+| Change code but forget the docs | 📝 Catches doc/README/comment drift against the diff, before it ships |
+| Come back to the repo tomorrow (or a teammate does) | 🧠 Has already logged *what changed and why*, so no one re-explains context to the AI from scratch |
+| Ask your AI tool for help | 🔀 Routes the request to a small, focused specialist agent instead of one general-purpose assistant guessing |
+| Open a generated file | 📂 It's plain YAML/Markdown — readable in five minutes, editable, deletable. Nothing hidden, nothing trained |
+
+## 🤔 "Doesn't my AI coding tool already do this?"
+
+Not really. Claude Code, Cursor, and friends are general-purpose assistants —
+they help when you ask, and they forget everything the moment the session
+ends. Harness Stack adds the parts a plain assistant doesn't do on its own:
+
+- **It runs automatically**, wired into events you already trigger (`git
+  commit`, project init) — not just when you remember to ask.
+- **It's made of small, single-job agents** (write missing tests, spot doc
+  drift, log the "why") instead of one assistant trying to do everything from
+  a blank slate.
+- **It has memory across sessions and repos** (via the optional
+  [harness-brain](https://github.com/cloudbloqavi/harness-brain)), so context
+  survives past today's chat window.
+- **It's the same behavior regardless of which AI tool you pick** — switch
+  from Claude Code to Cursor and the same checks still run.
+
+If that's not a gap you feel today, you may not need this yet — and that's a
+fine answer too.
 
 ```mermaid
 flowchart LR
@@ -29,29 +52,12 @@ flowchart LR
 
 Nothing here trains a model or calls a hosted service on your behalf — it
 generates plain text files (YAML/Markdown/TOML) that your existing AI coding
-tool reads. You can open every generated file, read it in five minutes, and
-delete it if you don't like it.
+tool reads. Open any generated file, read it in five minutes, delete it if you
+don't like it.
 
 **Jump to:** [Use Harness in another repo](#use-harness-in-another-repo) ·
-[Why Harness?](#why) · [How it works (deep dive)](#deep-dive-how-it-works) ·
+[Deep dive (design principles + architecture)](#deep-dive-how-it-works) ·
 [Contributing](#contributing)
-
-## Why
-
-Sub-agents are the execution engine behind every automated check, routing
-decision, and commit-memory write in a modern AI-assisted workflow. Harness
-makes them:
-
-- **Platform-agnostic by construction.** No agent spec names a concrete model
-  or a platform-specific tool. Agents declare an abstract **model tier** and
-  abstract **capabilities**; the active platform adapter resolves them.
-- **Fresh-context by mandate.** Any agent that reasons about libraries, APIs,
-  versions, or CVEs runs with web search + **Context7** wired — never stale
-  training data.
-- **Spec-driven by default.** Harness installs vetted foundations (**Spec Kit**
-  and **Superpowers**) and surfaces their skills through a consent-gated
-  recommendation protocol.
-- **Auditable.** Every sub-agent is a diffable `.yaml` in `.subagents/`.
 
 <a id="use-harness-in-another-repo"></a>
 
@@ -264,6 +270,19 @@ Full explanation, examples, and how to add your own project to it: see the
 The rest of this README is for people who want to understand — or modify —
 what's actually happening under the hood. Skip it if you just want to use
 Harness day to day.
+
+### Design principles
+
+- **Platform-agnostic by construction.** No agent spec names a concrete model
+  or a platform-specific tool. Agents declare an abstract **model tier** and
+  abstract **capabilities**; the active platform adapter resolves them.
+- **Fresh-context by mandate.** Any agent that reasons about libraries, APIs,
+  versions, or CVEs runs with web search + **Context7** wired — never stale
+  training data.
+- **Spec-driven by default.** Harness installs vetted foundations (**Spec Kit**
+  and **Superpowers**) and surfaces their skills through a consent-gated
+  recommendation protocol.
+- **Auditable.** Every sub-agent is a diffable `.yaml` in `.subagents/`.
 
 ## Architecture
 
