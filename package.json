@@ -19,6 +19,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "prepack": "node scripts/prepare.mjs",
+    "prepare": "node scripts/prepare.mjs",
     "dev": "tsx src/cli.ts",
     "harness": "tsx src/cli.ts",
     "test": "vitest run",
