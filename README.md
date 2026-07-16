@@ -259,6 +259,7 @@ Full explanation, examples, and how to add your own project to it: see the
 | Problem | Fix |
 | --- | --- |
 | `harness: command not found` | The global `npm bin` isn't on your `PATH`. Run `npm config get prefix`, then add `<that path>/bin` to your shell's `PATH`. Or use `npm link` from a local clone (Step 1). |
+| `npm install -g ...` fails with `'tsc' is not recognized as an internal or external command` (Windows) | The install builds the package from source, and that build used to shell out to the bare `tsc` command. On Windows, npm's internal git-dependency prepare step doesn't always put `node_modules/.bin` on `PATH`, so `tsc` couldn't be found even though it was installed. This is fixed on `main` (the build now invokes `node_modules/typescript/bin/tsc` via `node` directly) — just re-run the Step 1 install command to pick it up. Still hitting it? Use the local-clone fallback in Step 1 (`git clone ... && npm install && npm run build && npm link`), which builds in your normal shell instead of npm's internal prepare pipeline. |
 | `harness build-agents` fails with a fresh-context error | An agent needs a web-search tool + Context7 and your platform doesn't expose one yet. Re-run `harness init` and make sure you picked the right platform(s). |
 | Nothing happens when I ask my AI tool to use a sub-agent | Run `harness skills` — if the agent is command-only (not a "skill"), you need to invoke its slash command directly. |
 | I want to update to the latest Harness version | Re-run Step 1's install command — it reinstalls from the `main` branch. |
